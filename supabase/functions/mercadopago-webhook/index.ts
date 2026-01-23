@@ -6,6 +6,29 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Validate webhook signature
+async function validateWebhookSignature(body: string, signature: string): Promise<boolean> {
+  const webhookSecret = Deno.env.get('MERCADO_PAGO_WEBHOOK_SECRET');
+  
+  if (!webhookSecret) {
+    console.warn('MERCADO_PAGO_WEBHOOK_SECRET not configured, skipping signature validation');
+    return true; // Allow if secret not configured (for testing)
+  }
+
+  try {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(body + webhookSecret);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const computedSignature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    return computedSignature === signature;
+  } catch (error) {
+    console.error('Signature validation error:', error);
+    return false;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -18,12 +41,25 @@ serve(async (req) => {
       throw new Error('MERCADO_PAGO_ACCESS_TOKEN not configured');
     }
 
-    const body = await req.json();
-    console.log('Webhook received:', JSON.stringify(body, null, 2));
+    const body = await req.text();
+    const signature = req.headers.get('x-signature') || '';
+    
+    // Validate signature
+    const isValid = await validateWebhookSignature(body, signature);
+    if (!isValid) {
+      console.warn('Invalid webhook signature');
+      return new Response(JSON.stringify({ error: 'Invalid signature' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const payloadData = JSON.parse(body);
+    console.log('Webhook received:', JSON.stringify(payloadData, null, 2));
 
     // Handle payment notification
-    if (body.type === 'payment' && body.data?.id) {
-      const paymentId = body.data.id;
+    if (payloadData.type === 'payment' && payloadData.data?.id) {
+      const paymentId = payloadData.data.id;
       
       // Get payment details from Mercado Pago
       const paymentResponse = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
