@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import type { Product } from "@/data/products";
 import { categoryLabels } from "@/data/products";
 import { useCatalogStore } from "@/store/useCatalogStore";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 import {
   Dialog,
@@ -19,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 
 type Props = {
   open: boolean;
@@ -49,6 +52,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
   const [price, setPrice] = useState<string>("");
   const [priceSmall, setPriceSmall] = useState<string>("");
   const [priceLarge, setPriceLarge] = useState<string>("");
+  const [isPopular, setIsPopular] = useState(false);
 
   const isPizzaCategory = useMemo(
     () =>
@@ -69,6 +73,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
     setName(product.name ?? "");
     setDescription(product.description ?? "");
     setCategory(product.category ?? "promocionais");
+    setIsPopular(product.isPopular ?? false);
 
     // Pre-fill price fields based on product type
     setPrice(product.price != null ? String(product.price) : "");
@@ -82,6 +87,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
     setCategory("promocionais");
     setPrice("");
     setPriceSmall("");
+    setIsPopular(false);
     setPriceLarge("");
   };
 
@@ -90,7 +96,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
     return Number.isFinite(n) && n > 0 ? n : undefined;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const trimmed = name.trim();
     if (!trimmed) return;
 
@@ -104,11 +110,52 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
       description: description.trim(),
       category,
       price: !isPizzaCategory ? toNumberOrUndefined(price) : undefined,
+      isPopular,
       priceSmall: isPizzaCategory ? toNumberOrUndefined(priceSmall) : undefined,
       priceLarge: isPizzaCategory ? toNumberOrUndefined(priceLarge) : undefined,
     };
 
+    // Atualizar estado local (Zustand)
     upsertProduct(nextProduct);
+
+    // Salvar no Supabase com formato JSONB correto
+    try {
+      const dataJson = {
+        description: nextProduct.description,
+        category: nextProduct.category,
+        price: nextProduct.price || undefined,
+        price_small: nextProduct.priceSmall || null,
+        price_large: nextProduct.priceLarge || null,
+        ingredients:isPopular,
+        image: nextProduct.image || undefined,
+        is_active: nextProduct.isActive !== false,
+        is_popular: nextProduct.isPopular || false,
+        is_vegetarian: nextProduct.isVegetarian || false,
+        is_customizable: nextProduct.isCustomizable || false,
+        is_new: nextProduct.isNew || false,
+      };
+
+      const { error } = await (supabase as any)
+        .from('products')
+        .upsert({
+          id: nextProduct.id,
+          name: nextProduct.name,
+          data: dataJson,
+        }, { onConflict: 'id' });
+
+      if (error) {
+        toast.error('Erro ao salvar produto no banco');
+        console.error('Erro Supabase:', error);
+        return;
+      }
+
+      toast.success(isEdit ? 'Produto atualizado!' : 'Produto criado!');
+    } catch (error) {
+      toast.error('Erro ao salvar produto');
+      console.error(error);
+      return;
+    }
+
     reset();
     onOpenChange(false);
   };
@@ -195,6 +242,15 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
               />
             </div>
           )}
+
+          <div className="flex items-center justify-between">
+            <Label htmlFor="p-popular">Marcar como Popular</Label>
+            <Switch
+              id="p-popular"
+              checked={isPopular}
+              onCheckedChange={setIsPopular}
+            />
+          </div>
 
           <div className="flex items-center justify-end gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>

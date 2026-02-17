@@ -1,9 +1,38 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Obter token de acesso (tenant ou fallback do sistema)
+async function getAccessToken(supabase: any): Promise<string> {
+  const fallbackToken = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN');
+
+  // Tentar buscar token do primeiro/único tenant
+  try {
+    const { data } = await supabase
+      .from('tenants')
+      .select('id, mercadopago_access_token')
+      .limit(1)
+      .single();
+
+    if (data?.mercadopago_access_token) {
+      console.log(`✅ Usando token do tenant: ${data.id}`);
+      return data.mercadopago_access_token;
+    }
+  } catch (error) {
+    console.warn('⚠️ Nenhum tenant encontrado ou sem token configurado:', error);
+  }
+
+  if (!fallbackToken) {
+    throw new Error('MERCADO_PAGO_ACCESS_TOKEN not configured');
+  }
+
+  console.log('⚠️ Usando token do sistema (fallback)');
+  return fallbackToken;
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -11,10 +40,17 @@ serve(async (req) => {
   }
 
   try {
-    const accessToken = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN');
-    
-    if (!accessToken) {
-      throw new Error('MERCADO_PAGO_ACCESS_TOKEN not configured');
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') || '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+    );
+
+    let accessToken;
+    try {
+      accessToken = await getAccessToken(supabase);
+    } catch (error) {
+      console.error('❌ Erro ao obter token:', error);
+      throw error;
     }
 
     const body = await req.json();

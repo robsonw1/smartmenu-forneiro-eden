@@ -29,7 +29,8 @@ export interface CartItem {
   drink?: Product;
   isDrinkFree?: boolean;
   comboPizzaFlavors?: Product[]; // Selected pizza flavors for combos
-  customIngredients?: string[]; // For Moda do Cliente
+  customIngredients?: string[]; // For Moda do Cliente (free ingredients)
+  paidIngredients?: string[]; // For Moda do Cliente (paid extras)
   notes?: string;
   totalPrice: number;
 }
@@ -47,9 +48,9 @@ export interface Order {
     name: string;
     phone: string;
     email?: string;
+    cpf?: string; // Only for PIX at payment step
   };
   address: {
-    zipCode: string;
     city: string;
     neighborhood: string;
     street: string;
@@ -63,10 +64,16 @@ export interface Order {
   items: CartItem[];
   subtotal: number;
   total: number;
+  pointsDiscount?: number;
+  pointsRedeemed?: number;
+  couponDiscount?: number;
+  appliedCoupon?: string;
   status: 'pending' | 'confirmed' | 'preparing' | 'delivering' | 'delivered' | 'cancelled';
   observations?: string;
   createdAt: Date;
   paymentId?: string;
+  printedAt?: string;
+  autoConfirmedByPix?: boolean; // Auto-confirmado via PIX
 }
 
 // Available ingredients for "Moda do Cliente" pizza
@@ -103,6 +110,33 @@ export const availableIngredients: string[] = [
   'Manjericão',
   'Azeitona',
   'Batata Palha',
+];
+
+// Meat ingredients (blocked as paid extras, except Frango which is allowed)
+export const meatIngredients: string[] = [
+  'Presunto',
+  'Lombo Canadense',
+  'Peito de Peru',
+  'Bacon',
+  'Pepperoni',
+  'Calabresa Fatiada',
+  'Calabresa Moída',
+  'Carne Seca',
+  'Costela Desfiada',
+  'Atum', // Fish is also in this category for payment purposes
+];
+
+// Ingredients that can be added as paid extras
+export const paidExtraIngredients: string[] = [
+  'Frango', // Only chicken meat allowed
+  'Catupiry Dallora',
+  'Catupiry Scala',
+  'Cream Cheese',
+  'Cheddar Scala',
+  'Provolone',
+  'Parmesão',
+  'Gorgonzola',
+  'Mussarela',
 ];
 
 // COMBOS
