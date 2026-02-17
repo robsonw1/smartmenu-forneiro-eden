@@ -133,7 +133,7 @@ serve(async (req) => {
       const { error: updateError } = await supabase
         .from('orders')
         .update({
-          status: 'confirmado',
+          status: 'confirmed',
           payment_status: 'approved',
           payment_confirmed_at: new Date().toISOString(),
           mercado_pago_id: paymentId.toString(),

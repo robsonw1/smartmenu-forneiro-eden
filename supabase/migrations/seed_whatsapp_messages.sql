@@ -16,7 +16,7 @@ BEGIN
     -- Inserir mensagens padrão
     INSERT INTO whatsapp_status_messages (tenant_id, status, message_template, enabled)
     VALUES
-      (v_tenant_id, 'confirmado', '🍕 Oi {nome}! Seu pedido #{pedido} foi confirmado! ⏱️ Saindo do forno em ~25min', true),
+      (v_tenant_id, 'confirmed', '🍕 Oi {nome}! Seu pedido #{pedido} foi confirmado! ⏱️ Saindo do forno em ~25min', true),
       (v_tenant_id, 'preparing', '👨‍🍳 Seu pedido #{pedido} está sendo preparado com capricho!', true),
       (v_tenant_id, 'delivering', '🚗 Seu pedido #{pedido} está a caminho! 📍 Chega em ~15min', true),
       (v_tenant_id, 'delivered', '✅ Pedido #{pedido} entregue! Valeu pela compra 🙏', true),
