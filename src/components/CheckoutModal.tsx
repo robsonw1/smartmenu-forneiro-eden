@@ -25,6 +25,7 @@ import { useLoyaltySettingsStore } from '@/store/useLoyaltySettingsStore';
 import { useCouponManagementStore } from '@/store/useCouponManagementStore';
 import { useOrderCancellationSync } from '@/hooks/use-order-cancellation-sync';
 import { supabase } from '@/integrations/supabase/client';
+import { sendOrderSummaryToWhatsApp } from '@/lib/whatsapp-notification';
 import { PostCheckoutLoyaltyModal } from './PostCheckoutLoyaltyModal';
 import { 
   User, 
@@ -690,7 +691,46 @@ export function CheckoutModal() {
     
     console.log('✅ [CHECKOUT] Pedido criado com ID:', createdOrder.id, 'Tenant:', tenantId || 'será auto-detectado');
 
-    // 🔒 CRÍTICO: Se cliente usou pontos, sincronizar IMEDIATAMENTE com BD
+    // � Enviar resumo para WhatsApp do gerente (se habilitado nas configurações)
+    if (settings.sendOrderSummaryToWhatsApp && settings.phone) {
+      try {
+        // Formatar número do pedido
+        const orderNo = createdOrder.id || `PED-${Date.now()}`;
+        
+        // Enviar resumo formatado
+        await sendOrderSummaryToWhatsApp({
+          orderId: createdOrder.id,
+          customerName: customer.name,
+          customerPhone: customer.phone,
+          customerEmail: customer.email,
+          items: items.map((item) => ({
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          subtotal,
+          deliveryFee: deliveryType === 'pickup' ? 0 : deliveryFee,
+          total: orderPayload.totals.total,
+          deliveryType,
+          address: deliveryType === 'delivery' ? {
+            street: address.street,
+            number: address.number,
+            neighborhood: selectedNeighborhood?.name || '',
+            complement: address.complement,
+          } : undefined,
+          observations,
+          orderNo,
+          managerPhone: settings.phone,
+          tenantId: tenantId || '',
+        });
+        console.log('📱 Resumo do pedido enviado para WhatsApp');
+      } catch (error) {
+        console.warn('⚠️ Erro ao enviar resumo para WhatsApp:', error);
+        // Não quebra o fluxo se falhar
+      }
+    }
+
+    // �🔒 CRÍTICO: Se cliente usou pontos, sincronizar IMEDIATAMENTE com BD
     // Isso evita fraude onde cliente abre outra aba e usa os mesmos pontos
     if (pointsRedeemed > 0) {
       try {
