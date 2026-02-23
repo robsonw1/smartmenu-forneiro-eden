@@ -13,6 +13,32 @@ export interface SendNotificationParams {
   tenantId: string;
 }
 
+export interface SendOrderSummaryParams {
+  orderId: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
+  items: Array<{
+    name: string;
+    quantity: number;
+    price: number;
+  }>;
+  subtotal: number;
+  deliveryFee: number;
+  total: number;
+  deliveryType: 'delivery' | 'pickup';
+  address?: {
+    street: string;
+    number: string;
+    neighborhood: string;
+    complement?: string;
+  };
+  observations?: string;
+  orderNo: string;
+  managerPhone: string;
+  tenantId: string;
+}
+
 /**
  * Envia notificação de pedido via WhatsApp
  * Executa de forma assíncrona e não bloqueia o fluxo principal
@@ -115,5 +141,67 @@ export async function testEvolutionConnection(
       success: false,
       message: `Erro de conexão: ${error instanceof Error ? error.message : 'Desconhecido'}`,
     };
+  }
+}
+
+/**
+ * Envia resumo do pedido formatado para o gerente via WhatsApp
+ * Executa de forma assíncrona
+ */
+export async function sendOrderSummaryToWhatsApp(params: SendOrderSummaryParams): Promise<void> {
+  try {
+    if (!params.orderId || !params.managerPhone || !params.tenantId) {
+      console.warn('⚠️ [Resumo WhatsApp] Parâmetros incompletos:', params);
+      return;
+    }
+
+    // Formatar mensagem com resumo do pedido
+    const itemsText = params.items
+      .map((item) => `  • ${item.quantity}x ${item.name} - R$ ${(item.price * item.quantity).toFixed(2)}`)
+      .join('\n');
+
+    const addressText =
+      params.deliveryType === 'delivery' && params.address
+        ? `📍 ${params.address.street}, ${params.address.number}${params.address.complement ? ', ' + params.address.complement : ''}\n   ${params.address.neighborhood}`
+        : `🏪 Retirada no local`;
+
+    const message = `📦 NOVO PEDIDO #${params.orderNo}
+
+👤 Cliente: ${params.customerName}
+📱 Telefone: ${params.customerPhone}
+${params.customerEmail ? `📧 Email: ${params.customerEmail}\n` : ''}
+🛍️ Itens:
+${itemsText}
+
+Subtotal: R$ ${params.subtotal.toFixed(2)}
+Entrega: R$ ${params.deliveryFee.toFixed(2)}
+💰 Total: R$ ${params.total.toFixed(2)}
+
+${addressText}
+${params.deliveryType === 'delivery' ? '\n🚗 Tipo: Entrega' : '\n🚗 Tipo: Retirada'}
+${params.observations ? `\n📝 Observações: ${params.observations}` : ''}`;
+
+    // Invocar Edge Function de forma assíncrona
+    supabase.functions
+      .invoke('send-order-summary-whatsapp', {
+        body: {
+          phone: params.managerPhone,
+          message,
+          orderId: params.orderId,
+          tenantId: params.tenantId,
+        },
+      })
+      .then((response) => {
+        if (response.data?.success) {
+          console.log(`✅ [Resumo WhatsApp] Mensagem enviada para ${params.managerPhone}`);
+        } else {
+          console.warn(`⚠️ [Resumo WhatsApp] Falha ao enviar:`, response.data?.error);
+        }
+      })
+      .catch((error) => {
+        console.warn(`⚠️ [Resumo WhatsApp] Erro ao chamar função:`, error);
+      });
+  } catch (error) {
+    console.error('❌ [Resumo WhatsApp] Erro inesperado:', error);
   }
 }
