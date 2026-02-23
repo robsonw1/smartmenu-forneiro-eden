@@ -704,9 +704,9 @@ export function CheckoutModal() {
           customerPhone: customer.phone,
           customerEmail: customer.email,
           items: items.map((item) => ({
-            name: item.name,
+            name: item.product.name,
             quantity: item.quantity,
-            price: item.price,
+            price: item.product.price || 0,
           })),
           subtotal,
           deliveryFee: deliveryType === 'pickup' ? 0 : deliveryFee,
