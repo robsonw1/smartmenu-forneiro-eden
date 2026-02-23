@@ -502,6 +502,9 @@ const AdminDashboard = () => {
     // Atualizar o store e salvar no Supabase
     await updateSettings(settingsForm);
     
+    // Force settings refresh in CheckoutModal
+    localStorage.setItem('settings-updated', Date.now().toString());
+    
     toast.success('Configurações salvas com sucesso!');
   };
 
@@ -1164,7 +1167,14 @@ const AdminDashboard = () => {
                       <Input 
                         id="store-phone" 
                         value={settingsForm.phone}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, phone: e.target.value })}
+                        onChange={(e) => {
+                          const cleaned = e.target.value.replace(/\D/g, '');
+                          let formatted = cleaned;
+                          if (cleaned.length > 2) formatted = `(${cleaned.slice(0, 2)}) ${cleaned.slice(2)}`;
+                          if (cleaned.length > 7) formatted = `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7)}`;
+                          setSettingsForm({ ...settingsForm, phone: formatted });
+                        }}
+                        placeholder="(11) 99999-9999"
                         className="mt-1" 
                       />
                     </div>
