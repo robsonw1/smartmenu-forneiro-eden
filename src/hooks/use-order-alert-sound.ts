@@ -27,29 +27,30 @@ export const useOrderAlertSound = () => {
       const audioContext = audioContextRef.current;
       const now = audioContext.currentTime;
 
-      // Criar o oscilador para a primeira frequência (beep agudo)
+      // Criar o oscilador para a primeira frequência (beep grave)
       const oscillator1 = audioContext.createOscillator();
       const gainNode1 = audioContext.createGain();
 
       oscillator1.connect(gainNode1);
       gainNode1.connect(audioContext.destination);
 
-      // Som agudo para chamar atenção (800Hz)
-      oscillator1.frequency.value = 800;
+      // Som grave para chamar atenção (400Hz)
+      oscillator1.frequency.value = 400;
       gainNode1.gain.setValueAtTime(0.8, now);
       gainNode1.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
 
       oscillator1.start(now);
       oscillator1.stop(now + 0.2);
 
-      // Criar um segundo beep após um pequeno delay (padrão de alerta comum)
+      // Criar um segundo beep agudo após um pequeno delay (contraste)
       const oscillator2 = audioContext.createOscillator();
       const gainNode2 = audioContext.createGain();
 
       oscillator2.connect(gainNode2);
       gainNode2.connect(audioContext.destination);
 
-      oscillator2.frequency.value = 800;
+      // Som agudo para maior impacto (1000Hz)
+      oscillator2.frequency.value = 1000;
       gainNode2.gain.setValueAtTime(0.8, now + 0.25);
       gainNode2.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
 
