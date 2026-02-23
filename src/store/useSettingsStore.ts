@@ -32,7 +32,9 @@ interface StoreSettings {
   print_mode?: string;
   auto_print_pix?: boolean;
   auto_print_card?: boolean;
-  auto_print_cash?: boolean;}
+  auto_print_cash?: boolean;
+  orderAlertEnabled?: boolean; // Ativar/desativar som de alerta para novos pedidos
+}
 
 interface SettingsStore {
   settings: StoreSettings;
@@ -73,6 +75,7 @@ const defaultSettings: StoreSettings = {
   pickupTimeMin: 40,
   pickupTimeMax: 50,
   adminPassword: 'admin123',
+  orderAlertEnabled: true,
 };
 
 const dayNames: (keyof WeekSchedule)[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -101,6 +104,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         pickupTimeMin: currentSettings.pickupTimeMin,
         pickupTimeMax: currentSettings.pickupTimeMax,
         isManuallyOpen: currentSettings.isManuallyOpen,
+        orderAlertEnabled: currentSettings.orderAlertEnabled !== undefined ? currentSettings.orderAlertEnabled : true,
       };
 
       // Mapear para as colunas da tabela settings
