@@ -36,7 +36,7 @@ export const useOrderAlertSound = () => {
 
       // Som agudo para chamar atenção (800Hz)
       oscillator1.frequency.value = 800;
-      gainNode1.gain.setValueAtTime(0.3, now);
+      gainNode1.gain.setValueAtTime(0.8, now);
       gainNode1.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
 
       oscillator1.start(now);
@@ -50,7 +50,7 @@ export const useOrderAlertSound = () => {
       gainNode2.connect(audioContext.destination);
 
       oscillator2.frequency.value = 800;
-      gainNode2.gain.setValueAtTime(0.3, now + 0.25);
+      gainNode2.gain.setValueAtTime(0.8, now + 0.25);
       gainNode2.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
 
       oscillator2.start(now + 0.25);
