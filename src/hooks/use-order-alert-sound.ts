@@ -26,38 +26,37 @@ export const useOrderAlertSound = () => {
 
       const audioContext = audioContextRef.current;
       const now = audioContext.currentTime;
+      const duration = 0.6; // 600ms total
 
-      // Criar o oscilador para a primeira frequência (beep grave)
-      const oscillator1 = audioContext.createOscillator();
-      const gainNode1 = audioContext.createGain();
+      // Criar oscilador para som de campainha
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      const lfo = audioContext.createOscillator(); // Low frequency oscillator para pulsação
 
-      oscillator1.connect(gainNode1);
-      gainNode1.connect(audioContext.destination);
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
 
-      // Som grave para chamar atenção (400Hz)
-      oscillator1.frequency.value = 400;
-      gainNode1.gain.setValueAtTime(0.8, now);
-      gainNode1.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+      // Frequência de campainha (aguda e metálica)
+      oscillator.frequency.value = 1200;
 
-      oscillator1.start(now);
-      oscillator1.stop(now + 0.2);
+      // LFO para criar efeito de vibração/pulsação (tipo campainha real)
+      lfo.frequency.value = 7; // 7 pulsos por segundo
+      const lfoGain = audioContext.createGain();
+      lfo.connect(lfoGain);
+      lfoGain.connect(oscillator.frequency);
+      lfoGain.gain.value = 100; // Variação de frequência
 
-      // Criar um segundo beep agudo após um pequeno delay (contraste)
-      const oscillator2 = audioContext.createOscillator();
-      const gainNode2 = audioContext.createGain();
+      // Volume sobe rápido e desce lentamente (som de campainha)
+      gainNode.gain.setValueAtTime(0, now);
+      gainNode.gain.linearRampToValueAtTime(0.8, now + 0.1); // Aumento rápido
+      gainNode.gain.exponentialRampToValueAtTime(0.01, now + duration); // Queda suave
 
-      oscillator2.connect(gainNode2);
-      gainNode2.connect(audioContext.destination);
+      oscillator.start(now);
+      oscillator.stop(now + duration);
+      lfo.start(now);
+      lfo.stop(now + duration);
 
-      // Som agudo para maior impacto (1000Hz)
-      oscillator2.frequency.value = 1000;
-      gainNode2.gain.setValueAtTime(0.8, now + 0.25);
-      gainNode2.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
-
-      oscillator2.start(now + 0.25);
-      oscillator2.stop(now + 0.45);
-
-      console.log('🔔 Som de alerta tocado');
+      console.log('🔔 Som de campainha tocado');
     } catch (error) {
       console.error('❌ Erro ao tocar som:', error);
     }
