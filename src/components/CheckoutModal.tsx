@@ -244,6 +244,25 @@ export function CheckoutModal() {
     }
   }, [isCheckoutOpen]);
 
+  // ✅ FORCE SETTINGS REFRESH: Monitorar atualizações de settings do admin
+  useEffect(() => {
+    const handleSettingsUpdate = () => {
+      // Forçar re-render para pegar settings.phone atualizado
+      console.log('🔄 [CHECKOUT] Settings atualizadas, phone agora:', settings.phone);
+    };
+
+    const settingsUpdateListener = () => handleSettingsUpdate();
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'settings-updated') {
+        settingsUpdateListener();
+      }
+    });
+
+    return () => {
+      window.removeEventListener('storage', settingsUpdateListener);
+    };
+  }, [settings.phone]);
+
   // 🔴 REALTIME: Sincronizar pontos do cliente em tempo real
   // Detecta quando outro navegador/aba usa os mesmos pontos (previne fraude)
   useEffect(() => {
@@ -752,6 +771,9 @@ export function CheckoutModal() {
             details: details.length > 0 ? details : undefined,
           };
         });
+        
+        console.log('📋 [WHATSAPP] Items com detalhes:', JSON.stringify(itemsWithDetails, null, 2));
+        console.log('📱 [WHATSAPP] Enviando para telefone do gerente:', settings.phone);
         
         // Enviar resumo formatado
         await sendOrderSummaryToWhatsApp({
