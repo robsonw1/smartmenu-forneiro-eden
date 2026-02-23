@@ -34,6 +34,7 @@ interface StoreSettings {
   auto_print_card?: boolean;
   auto_print_cash?: boolean;
   orderAlertEnabled?: boolean; // Ativar/desativar som de alerta para novos pedidos
+  sendOrderSummaryToWhatsApp?: boolean; // Ativar/desativar envio de resumo para WhatsApp
 }
 
 interface SettingsStore {
@@ -76,6 +77,7 @@ const defaultSettings: StoreSettings = {
   pickupTimeMax: 50,
   adminPassword: 'admin123',
   orderAlertEnabled: true,
+  sendOrderSummaryToWhatsApp: false,
 };
 
 const dayNames: (keyof WeekSchedule)[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -105,6 +107,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         pickupTimeMax: currentSettings.pickupTimeMax,
         isManuallyOpen: currentSettings.isManuallyOpen,
         orderAlertEnabled: currentSettings.orderAlertEnabled !== undefined ? currentSettings.orderAlertEnabled : true,
+        sendOrderSummaryToWhatsApp: currentSettings.sendOrderSummaryToWhatsApp !== undefined ? currentSettings.sendOrderSummaryToWhatsApp : false,
       };
 
       // Mapear para as colunas da tabela settings
