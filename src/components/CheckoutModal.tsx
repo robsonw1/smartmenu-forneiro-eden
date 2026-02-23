@@ -697,18 +697,73 @@ export function CheckoutModal() {
         // Formatar número do pedido
         const orderNo = createdOrder.id || `PED-${Date.now()}`;
         
+        // Mapear items com detalhes completos
+        const itemsWithDetails = items.map((item) => {
+          const details: string[] = [];
+          
+          // Detalhes de pizza (para combos e pizzas)
+          if (item.comboPizzaFlavors && item.comboPizzaFlavors.length > 0) {
+            item.comboPizzaFlavors.forEach((pizza, index) => {
+              details.push(`Pizza ${index + 1}: ${pizza.name}`);
+            });
+          }
+          
+          // Tamanho
+          if (item.size) {
+            details.push(`Tamanho: ${item.size === 'broto' ? 'Broto' : 'Grande'}`);
+          }
+          
+          // Borda
+          if (item.border) {
+            details.push(`Borda: ${item.border.name}`);
+          }
+          
+          // Bebida
+          if (item.drink) {
+            details.push(`Bebida: ${item.drink.name}${item.isDrinkFree ? ' (grátis)' : ''}`);
+          }
+          
+          // Adicionais
+          if (item.extras && item.extras.length > 0) {
+            item.extras.forEach(extra => {
+              details.push(`Adicional: ${extra.name}`);
+            });
+          }
+          
+          // Ingredientes customizados (Moda do Cliente)
+          if (item.customIngredients && item.customIngredients.length > 0) {
+            details.push(`Ingredientes grátis: ${item.customIngredients.join(', ')}`);
+          }
+          
+          if (item.paidIngredients && item.paidIngredients.length > 0) {
+            details.push(`Ingredientes extras: ${item.paidIngredients.join(', ')}`);
+          }
+          
+          // Observações do item
+          if (item.notes) {
+            details.push(`Obs: ${item.notes}`);
+          }
+          
+          return {
+            name: item.product.name,
+            quantity: item.quantity,
+            price: item.product.price || 0,
+            size: item.size,
+            details: details.length > 0 ? details : undefined,
+          };
+        });
+        
         // Enviar resumo formatado
         await sendOrderSummaryToWhatsApp({
           orderId: createdOrder.id,
           customerName: customer.name,
           customerPhone: customer.phone,
           customerEmail: customer.email,
-          items: items.map((item) => ({
-            name: item.product.name,
-            quantity: item.quantity,
-            price: item.product.price || 0,
-          })),
+          items: itemsWithDetails,
           subtotal,
+          pointsDiscount: pointsDiscount || 0,
+          couponDiscount: orderPayload.totals.couponDiscount || 0,
+          appliedCoupon: orderPayload.totals.appliedCoupon,
           deliveryFee: deliveryType === 'pickup' ? 0 : deliveryFee,
           total: orderPayload.totals.total,
           deliveryType,
