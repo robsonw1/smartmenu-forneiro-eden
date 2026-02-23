@@ -181,14 +181,16 @@ ${addressText}
 ${params.deliveryType === 'delivery' ? '\n🚗 Tipo: Entrega' : '\n🚗 Tipo: Retirada'}
 ${params.observations ? `\n📝 Observações: ${params.observations}` : ''}`;
 
-    // Invocar Edge Function de forma assíncrona
+    // Chamar a função existente send-whatsapp-notification
+    // Passando a mensagem formatada
     supabase.functions
-      .invoke('send-order-summary-whatsapp', {
+      .invoke('send-whatsapp-notification', {
         body: {
           phone: params.managerPhone,
           message,
           orderId: params.orderId,
           tenantId: params.tenantId,
+          messageType: 'order_summary', // Identificar tipo de mensagem
         },
       })
       .then((response) => {
