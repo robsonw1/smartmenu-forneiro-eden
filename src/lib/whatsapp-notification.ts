@@ -22,8 +22,13 @@ export interface SendOrderSummaryParams {
     name: string;
     quantity: number;
     price: number;
+    size?: string;
+    details?: string[]; // Detalhes: sabores, bebidas, adicionais, bordas, customizações
   }>;
   subtotal: number;
+  pointsDiscount?: number; // Desconto de pontos de fidelidade
+  couponDiscount?: number; // Desconto de cupom
+  appliedCoupon?: string; // Nome do cupom aplicado
   deliveryFee: number;
   total: number;
   deliveryType: 'delivery' | 'pickup';
@@ -155,15 +160,30 @@ export async function sendOrderSummaryToWhatsApp(params: SendOrderSummaryParams)
       return;
     }
 
-    // Formatar mensagem com resumo do pedido
+    // Formatar mensagem com resumo do pedido (incluindo detalhes)
     const itemsText = params.items
-      .map((item) => `  • ${item.quantity}x ${item.name} - R$ ${(item.price * item.quantity).toFixed(2)}`)
+      .map((item) => {
+        const baseText = `• ${item.quantity}x ${item.name}${item.size ? ` (${item.size})` : ''} - R$ ${(item.price * item.quantity).toFixed(2)}`;
+        const details = item.details && item.details.length > 0 
+          ? `\n   ${item.details.map(d => `→ ${d}`).join('\n   ')}`
+          : '';
+        return `  ${baseText}${details}`;
+      })
       .join('\n');
 
     const addressText =
       params.deliveryType === 'delivery' && params.address
         ? `📍 ${params.address.street}, ${params.address.number}${params.address.complement ? ', ' + params.address.complement : ''}\n   ${params.address.neighborhood}`
         : `🏪 Retirada no local`;
+
+    // Montar linha de descontos
+    let discountsText = '';
+    if (params.couponDiscount && params.couponDiscount > 0) {
+      discountsText += `🎁 Desconto (Cupom ${params.appliedCoupon || 'N/A'}): -R$ ${params.couponDiscount.toFixed(2)}\n`;
+    }
+    if (params.pointsDiscount && params.pointsDiscount > 0) {
+      discountsText += `⭐ Desconto (Pontos): -R$ ${params.pointsDiscount.toFixed(2)}\n`;
+    }
 
     const message = `📦 NOVO PEDIDO #${params.orderNo}
 
@@ -174,7 +194,7 @@ ${params.customerEmail ? `📧 Email: ${params.customerEmail}\n` : ''}
 ${itemsText}
 
 Subtotal: R$ ${params.subtotal.toFixed(2)}
-Entrega: R$ ${params.deliveryFee.toFixed(2)}
+${discountsText}Entrega: R$ ${params.deliveryFee.toFixed(2)}
 💰 Total: R$ ${params.total.toFixed(2)}
 
 ${addressText}
