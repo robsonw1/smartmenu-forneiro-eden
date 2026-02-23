@@ -74,6 +74,7 @@ import { toast } from 'sonner';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useTheme } from '@/hooks/use-theme';
+import { useOrderAlertSound } from '@/hooks/use-order-alert-sound';
 import logoForneiro from '@/assets/logo-forneiro.jpg';
 
 const AdminDashboard = () => {
@@ -108,6 +109,9 @@ const AdminDashboard = () => {
   const updateOrderPrintedAt = useOrdersStore((s) => s.updateOrderPrintedAt);
   const getStats = useOrdersStore((s) => s.getStats);
   const removeOrder = useOrdersStore((s) => s.removeOrder);
+
+  // Order alert sound hook - ativa/desativa automaticamente baseado nas settings
+  useOrderAlertSound();
 
   // Local state for settings form
   const [settingsForm, setSettingsForm] = useState(settings);
@@ -294,6 +298,19 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error('Erro ao sincronizar status da loja:', error);
       toast.error('Erro ao atualizar status da loja');
+    }
+  };
+
+  // Alternar som de alerta para novos pedidos
+  const handleOrderAlertToggle = async () => {
+    try {
+      const newState = !settingsForm.orderAlertEnabled;
+      setSettingsForm({ ...settingsForm, orderAlertEnabled: newState });
+      await updateSettings({ ...settingsForm, orderAlertEnabled: newState });
+      toast.success(newState ? '🔔 Som de alerta ativado' : '🔕 Som de alerta desativado');
+    } catch (error) {
+      console.error('Erro ao sincronizar som de alerta:', error);
+      toast.error('Erro ao atualizar som de alerta');
     }
   };
 
@@ -1168,6 +1185,24 @@ const AdminDashboard = () => {
                     onScheduleChange={handleScheduleChange}
                     onManualOpenToggle={handleManualOpenToggle}
                   />
+
+                  <Separator />
+
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-blue-50 dark:bg-blue-950/20">
+                    <div className="flex items-center gap-3">
+                      <Bell className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                      <div>
+                        <Label className="text-base font-semibold cursor-pointer">Som de Alerta para Pedidos</Label>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {settingsForm.orderAlertEnabled ? '🔔 Ativado - Som toca quando novos pedidos chegam' : '🔕 Desativado'}
+                        </p>
+                      </div>
+                    </div>
+                    <Switch 
+                      checked={settingsForm.orderAlertEnabled || false}
+                      onCheckedChange={handleOrderAlertToggle}
+                    />
+                  </div>
 
                   <Separator />
 
