@@ -167,6 +167,7 @@ export async function sendOrderSummaryToWhatsApp(params: SendOrderSummaryParams)
         const details = item.details && item.details.length > 0 
           ? `\n   ${item.details.map(d => `→ ${d}`).join('\n   ')}`
           : '';
+        console.log(`🔍 [WHATSAPP] Item: ${item.name}, Details:`, item.details);
         return `  ${baseText}${details}`;
       })
       .join('\n');
@@ -200,6 +201,9 @@ ${discountsText}Entrega: R$ ${params.deliveryFee.toFixed(2)}
 ${addressText}
 ${params.deliveryType === 'delivery' ? '\n🚗 Tipo: Entrega' : '\n🚗 Tipo: Retirada'}
 ${params.observations ? `\n📝 Observações: ${params.observations}` : ''}`;
+
+    console.log('📤 [WHATSAPP] Mensagem formatada:\n', message);
+    console.log('📤 [WHATSAPP] Enviando para telefone:', params.managerPhone);
 
     // Invocar Edge Function send-order-summary-whatsapp
     // Com a mensagem formatada do resumo
