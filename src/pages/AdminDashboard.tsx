@@ -47,6 +47,7 @@ import {
   Moon,
   CreditCard,
   Bell,
+  MessageCircle,
 } from 'lucide-react';
 import {
   Product,
@@ -311,6 +312,19 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error('Erro ao sincronizar som de alerta:', error);
       toast.error('Erro ao atualizar som de alerta');
+    }
+  };
+
+  // Alternar envio de resumo de pedidos para WhatsApp
+  const handleOrderSummaryToWhatsAppToggle = async () => {
+    try {
+      const newState = !settingsForm.sendOrderSummaryToWhatsApp;
+      setSettingsForm({ ...settingsForm, sendOrderSummaryToWhatsApp: newState });
+      await updateSettings({ ...settingsForm, sendOrderSummaryToWhatsApp: newState });
+      toast.success(newState ? '💬 Resumo de pedidos via WhatsApp ativado' : '💬 Resumo de pedidos via WhatsApp desativado');
+    } catch (error) {
+      console.error('Erro ao sincronizar resumo WhatsApp:', error);
+      toast.error('Erro ao atualizar resumo WhatsApp');
     }
   };
 
@@ -1201,6 +1215,22 @@ const AdminDashboard = () => {
                     <Switch 
                       checked={settingsForm.orderAlertEnabled || false}
                       onCheckedChange={handleOrderAlertToggle}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-green-50 dark:bg-green-950/20">
+                    <div className="flex items-center gap-3">
+                      <MessageCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                      <div>
+                        <Label className="text-base font-semibold cursor-pointer">Resumo de Pedidos no WhatsApp</Label>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {settingsForm.sendOrderSummaryToWhatsApp ? '💬 Ativado - Recebe resumo no WhatsApp' : '💬 Desativado'}
+                        </p>
+                      </div>
+                    </div>
+                    <Switch 
+                      checked={settingsForm.sendOrderSummaryToWhatsApp || false}
+                      onCheckedChange={handleOrderSummaryToWhatsAppToggle}
                     />
                   </div>
 
