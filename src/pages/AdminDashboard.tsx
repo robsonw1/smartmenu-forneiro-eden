@@ -144,6 +144,11 @@ const AdminDashboard = () => {
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>('all');
   const [orderSort, setOrderSort] = useState<'newest' | 'oldest'>('newest');
 
+  // Sincronizar settingsForm quando settings mudam (do Supabase real-time)
+  useEffect(() => {
+    setSettingsForm(settings);
+  }, [settings]);
+
   useEffect(() => {
     const token = localStorage.getItem('admin-token');
     if (!token) {
@@ -181,10 +186,6 @@ const AdminDashboard = () => {
       subscription.unsubscribe();
     };
   }, [syncOrdersFromSupabase]);
-
-  useEffect(() => {
-    setSettingsForm(settings);
-  }, [settings]);
 
   const handleLogout = () => {
     localStorage.removeItem('admin-token');
