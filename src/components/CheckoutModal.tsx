@@ -893,6 +893,12 @@ export function CheckoutModal() {
         console.log('  - selectedNeighborhood:', selectedNeighborhood?.name);
         
         // Enviar resumo formatado
+        // ⚠️ USAR O PAGAMENTO DO OBJETO CRIADO, NÃO DA VARIÁVEL LOCAL
+        const paymentMethodToSend = createdOrder.paymentMethod || paymentMethod || 'pix';
+        console.log('[MEGA-LOG] paymentMethod do state:', paymentMethod);
+        console.log('[MEGA-LOG] createdOrder.paymentMethod:', createdOrder.paymentMethod);
+        console.log('[MEGA-LOG] paymentMethodToSend final:', paymentMethodToSend);
+        
         await sendOrderSummaryToWhatsApp({
           orderId: createdOrder.id,
           customerName: customer.name,
@@ -914,15 +920,16 @@ export function CheckoutModal() {
             reference: address.reference,
           } : undefined,
           observations,
-          paymentMethod,
-          needsChange: paymentMethod === 'cash' ? needsChange : false,
-          changeAmount: paymentMethod === 'cash' && needsChange ? changeAmount : undefined,
+          paymentMethod: paymentMethodToSend,
+          needsChange: paymentMethodToSend === 'cash' ? needsChange : false,
+          changeAmount: paymentMethodToSend === 'cash' && needsChange ? changeAmount : undefined,
           orderNo,
           managerPhone: storeSettings.phone,
           tenantId: tenantId || '',
         });
         console.log('🔴 [DEBUG-AFTER] sendOrderSummaryToWhatsApp foi chamado com os dados acima');
         console.log('📱 Resumo do pedido enviado para WhatsApp');
+        console.log('[FINAL-DATA-SENT] paymentMethod que foi enviado:', paymentMethod);
       } catch (error) {
         console.warn('⚠️ Erro ao enviar resumo para WhatsApp:', error);
         // Não quebra o fluxo se falhar
