@@ -85,6 +85,8 @@ export interface Order {
   appliedCoupon?: string;
   status: 'pending' | 'confirmed' | 'preparing' | 'delivering' | 'delivered' | 'cancelled';
   observations?: string;
+  needsChange?: boolean; // Para pagamento em dinheiro
+  changeAmount?: string; // Valor do troco
   tenantId?: string; // ✅ CRÍTICO: Para multi-tenancy e notificações
   createdAt: Date;
   paymentId?: string;
