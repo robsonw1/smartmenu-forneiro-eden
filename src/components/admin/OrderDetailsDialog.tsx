@@ -23,6 +23,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { useState, useEffect } from 'react';
+import { MessageCircle } from 'lucide-react';
 
 type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'delivering' | 'delivered' | 'cancelled';
 
@@ -136,6 +137,15 @@ export function OrderDetailsDialog({ open, onOpenChange, order }: OrderDetailsDi
       style: 'currency',
       currency: 'BRL',
     }).format(price);
+  };
+
+  // Formatar número para WhatsApp: remove caracteres não numéricos e adiciona código do país
+  const formatWhatsAppUrl = (phone: string) => {
+    const cleanPhone = phone.replace(/\D/g, ''); // Remove tudo que não é número
+    const phoneWithCountry = cleanPhone.startsWith('55') 
+      ? cleanPhone 
+      : `55${cleanPhone}`;
+    return `https://wa.me/${phoneWithCountry}?text=Olá`;
   };
 
   const handleStatusChange = (newStatus: OrderStatus) => {
@@ -343,13 +353,24 @@ export function OrderDetailsDialog({ open, onOpenChange, order }: OrderDetailsDi
 
           {/* Customer Info */}
           <div>
-            <h4 className="font-semibold mb-2">Dados do Cliente</h4>
-            <div className="grid grid-cols-2 gap-2 text-sm">
+            <h4 className="font-semibold mb-3">Dados do Cliente</h4>
+            <div className="space-y-3">
               <div>
                 <span className="text-muted-foreground">Nome:</span> {localOrder.customer.name}
               </div>
-              <div>
-                <span className="text-muted-foreground">Telefone:</span> {localOrder.customer.phone}
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <span className="text-muted-foreground">Telefone:</span> {localOrder.customer.phone}
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="w-9 h-9 p-0 text-green-500 hover:bg-green-500/10 hover:text-green-600 flex-shrink-0"
+                  onClick={() => window.open(formatWhatsAppUrl(localOrder.customer.phone), '_blank')}
+                  title="Abrir WhatsApp com o cliente"
+                >
+                  <MessageCircle className="w-5 h-5" />
+                </Button>
               </div>
             </div>
           </div>
