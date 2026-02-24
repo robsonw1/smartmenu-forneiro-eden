@@ -768,11 +768,19 @@ export function CheckoutModal() {
         const itemsWithDetails = items.map((item) => {
           const details: string[] = [];
           
-          // Detalhes de pizza (para combos e pizzas)
+          // Detalhes de pizza (para combos)
           if (item.comboPizzaFlavors && item.comboPizzaFlavors.length > 0) {
             item.comboPizzaFlavors.forEach((pizza, index) => {
-              details.push(`Pizza ${index + 1}: ${pizza.name}`);
+              // Verificar se é meia-meia
+              const pizzaLabel = (pizza as any).isHalfHalf 
+                ? `Pizza ${index + 1} (Meia Meia): ${pizza.name} / ${(pizza as any).secondHalf?.name || 'N/A'}`
+                : `Pizza ${index + 1}: ${pizza.name}`;
+              details.push(pizzaLabel);
             });
+          }
+          // Detalhes de pizza simples (não combo) - verifica se é meia-meia
+          else if ((item as any).isHalfHalf) {
+            details.push(`Pizza (Meia Meia): ${item.product.name} / ${(item as any).secondHalf?.name || 'N/A'}`);
           }
           
           // Tamanho
