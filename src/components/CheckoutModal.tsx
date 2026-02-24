@@ -585,12 +585,34 @@ export function CheckoutModal() {
         extras: item.extras?.map(e => e.name) || [],
         drink: item.drink?.name || 'Sem bebida',
         customIngredients: item.customIngredients || null,
-        comboPizzas: isCombo ? item.comboPizzaFlavors?.map((pizza: any, index: number) => ({
-          pizzaNumber: index + 1,
-          type: pizza.isHalfHalf ? 'meia-meia' : 'inteira',
-          sabor1: pizza.name,
-          sabor2: pizza.isHalfHalf ? pizza.secondHalf?.name : undefined,
-        })) : undefined,
+        comboPizzas: isCombo ? (
+          // Usar comboPizzasData se disponível (dados explícitos)
+          item.comboPizzasData?.map((pizzaData) => {
+            const comboPizza = {
+              pizzaNumber: pizzaData.pizzaNumber,
+              type: pizzaData.isHalfHalf ? 'meia-meia' : 'inteira',
+              sabor1: pizzaData.pizzaName,
+              sabor2: pizzaData.isHalfHalf ? pizzaData.secondHalfName : undefined,
+            };
+            console.log(`📦 [CheckoutModal] Salvando Pizza ${pizzaData.pizzaNumber} (from data):`, comboPizza);
+            return comboPizza;
+          }) || 
+          // Fallback para comboPizzaFlavors (compatibilidade com dados antigos)
+          item.comboPizzaFlavors?.map((pizza: any, index: number) => {
+            const comboPizza = {
+              pizzaNumber: index + 1,
+              type: pizza.isHalfHalf ? 'meia-meia' : 'inteira',
+              sabor1: pizza.name,
+              sabor2: pizza.isHalfHalf ? pizza.secondHalf?.name : undefined,
+            };
+            console.log(`📦 [CheckoutModal] Salvando Pizza ${index + 1} (from flavors):`, {
+              pizzaObj: pizza,
+              isHalfHalf: pizza.isHalfHalf,
+              savedCombo: comboPizza,
+            });
+            return comboPizza;
+          })
+        ) : undefined,
       };
 
       return {
@@ -768,12 +790,40 @@ export function CheckoutModal() {
         const itemsWithDetails = items.map((item) => {
           const details: string[] = [];
           
-          // Detalhes de pizza (para combos)
-          if (item.comboPizzaFlavors && item.comboPizzaFlavors.length > 0) {
+          console.log('📋 [CheckoutModal] Item processing:', {
+            productName: item.product.name,
+            hasComboPizzasData: !!item.comboPizzasData,
+            hasComboPizzaFlavors: !!item.comboPizzaFlavors,
+            comboPizzasData: item.comboPizzasData,
+            comboPizzaFlavors: item.comboPizzaFlavors,
+          });
+          
+          // Usar comboPizzasData se disponível (dados explícitos mais confiáveis)
+          if (item.comboPizzasData && item.comboPizzasData.length > 0) {
+            item.comboPizzasData.forEach((pizzaData) => {
+              console.log(`🍕 [CheckoutModal] Pizza ${pizzaData.pizzaNumber} (from data):`, pizzaData);
+              
+              const pizzaLabel = pizzaData.isHalfHalf
+                ? `Pizza ${pizzaData.pizzaNumber} (Meia Meia): ${pizzaData.pizzaName} / ${pizzaData.secondHalfName || 'N/A'}`
+                : `Pizza ${pizzaData.pizzaNumber}: ${pizzaData.pizzaName}`;
+              details.push(pizzaLabel);
+            });
+          }
+          // Fallback para comboPizzaFlavors (compatibilidade com dados antigos)
+          else if (item.comboPizzaFlavors && item.comboPizzaFlavors.length > 0) {
             item.comboPizzaFlavors.forEach((pizza, index) => {
               // Verificar se é meia-meia
-              const pizzaLabel = (pizza as any).isHalfHalf 
-                ? `Pizza ${index + 1} (Meia Meia): ${pizza.name} / ${(pizza as any).secondHalf?.name || 'N/A'}`
+              const isHalfHalf = (pizza as any).isHalfHalf;
+              const secondHalfName = (pizza as any).secondHalf?.name;
+              console.log(`🍕 [CheckoutModal] Pizza ${index + 1} (from flavors):`, {
+                pizzaName: pizza.name,
+                isHalfHalf,
+                secondHalfName,
+                fullPizzaObject: pizza,
+              });
+              
+              const pizzaLabel = isHalfHalf
+                ? `Pizza ${index + 1} (Meia Meia): ${pizza.name} / ${secondHalfName || 'N/A'}`
                 : `Pizza ${index + 1}: ${pizza.name}`;
               details.push(pizzaLabel);
             });
