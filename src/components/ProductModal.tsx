@@ -219,6 +219,7 @@ export function ProductModal() {
 
     // Build combo pizza flavors array with half-half info
     const comboPizzaFlavors: any[] = [];
+    const comboPizzasData: any[] = [];
     if (isCombo) {
       if (comboPizza1Id) {
         const pizza1 = promotionalPizzas.find(p => p.id === comboPizza1Id);
@@ -226,10 +227,28 @@ export function ProductModal() {
           const pizza1Half = isPizza1HalfHalf && comboPizza1HalfId 
             ? promotionalPizzas.find(p => p.id === comboPizza1HalfId) 
             : undefined;
-          comboPizzaFlavors.push({
+          const pizza1Item = {
             ...pizza1,
             isHalfHalf: isPizza1HalfHalf,
             secondHalf: pizza1Half,
+          };
+          console.log('🍕 [ProductModal] Combo Pizza 1:', {
+            pizzaName: pizza1.name,
+            isPizza1HalfHalf,
+            comboPizza1HalfId,
+            pizza1HalfName: pizza1Half?.name,
+            savedObject: pizza1Item,
+          });
+          comboPizzaFlavors.push(pizza1Item);
+          
+          // Also save explicit data structure for serialization reliability
+          comboPizzasData.push({
+            pizzaNumber: 1,
+            pizzaId: pizza1.id,
+            pizzaName: pizza1.name,
+            isHalfHalf: isPizza1HalfHalf,
+            secondHalfId: pizza1Half?.id,
+            secondHalfName: pizza1Half?.name,
           });
         }
       }
@@ -239,14 +258,34 @@ export function ProductModal() {
           const pizza2Half = isPizza2HalfHalf && comboPizza2HalfId 
             ? promotionalPizzas.find(p => p.id === comboPizza2HalfId) 
             : undefined;
-          comboPizzaFlavors.push({
+          const pizza2Item = {
             ...pizza2,
             isHalfHalf: isPizza2HalfHalf,
             secondHalf: pizza2Half,
+          };
+          console.log('🍕 [ProductModal] Combo Pizza 2:', {
+            pizzaName: pizza2.name,
+            isPizza2HalfHalf,
+            comboPizza2HalfId,
+            pizza2HalfName: pizza2Half?.name,
+            savedObject: pizza2Item,
+          });
+          comboPizzaFlavors.push(pizza2Item);
+          
+          // Also save explicit data structure for serialization reliability
+          comboPizzasData.push({
+            pizzaNumber: 2,
+            pizzaId: pizza2.id,
+            pizzaName: pizza2.name,
+            isHalfHalf: isPizza2HalfHalf,
+            secondHalfId: pizza2Half?.id,
+            secondHalfName: pizza2Half?.name,
           });
         }
       }
     }
+    console.log('📦 [ProductModal] comboPizzaFlavors antes de salvar:', comboPizzaFlavors);
+    console.log('📦 [ProductModal] comboPizzasData antes de salvar:', comboPizzasData);
 
     const cartItem: CartItem = {
       id: '',
@@ -260,6 +299,7 @@ export function ProductModal() {
       drink: selectedDrink,
       isDrinkFree: isCombo,
       comboPizzaFlavors: comboPizzaFlavors.length > 0 ? comboPizzaFlavors : undefined,
+      comboPizzasData: comboPizzasData.length > 0 ? comboPizzasData : undefined,
       customIngredients: isCustomizable ? customIngredients : undefined,
       paidIngredients: isCustomizable && paidIngredients.length > 0 ? paidIngredients : undefined,
       totalPrice: calculateTotal(),
