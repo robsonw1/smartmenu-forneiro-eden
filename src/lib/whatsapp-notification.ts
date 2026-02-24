@@ -107,7 +107,13 @@ export async function sendOrderSummaryToWhatsApp(params: SendOrderSummaryParams)
         if (params.needsChange && params.changeAmount) {
           paymentText += ` - Troco para: R$ ${params.changeAmount}`;
         }
+      } else {
+        console.warn('🚨 [WHATSAPP] paymentMethod value not recognized:', params.paymentMethod);
+        paymentText = `💳 Pagamento: ${params.paymentMethod}`;
       }
+    } else {
+      console.warn('🚨🚨🚨 [WHATSAPP] paymentMethod is UNDEFINED or EMPTY!');
+      paymentText = '';
     }
 
     console.log('💳 [WHATSAPP] paymentText FINAL:', paymentText);
@@ -129,7 +135,7 @@ ${discountsText}🚚 Entrega: R$ ${params.deliveryFee.toFixed(2)}
 ${addressText}
 
 🚗 Tipo: ${params.deliveryType === 'delivery' ? 'Entrega' : 'Retirada'}
-${paymentText ? `${paymentText}` : ''}
+${paymentText ? `${paymentText}` : '⚠️ Pagamento: Não informado'}
 ${params.observations ? `📝 Observações: ${params.observations}` : ''}`;
 
     console.log('📤 [WHATSAPP] =============== MENSAGEM FINAL ===============');
