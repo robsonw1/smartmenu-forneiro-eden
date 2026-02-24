@@ -37,8 +37,12 @@ export interface SendOrderSummaryParams {
     number: string;
     neighborhood: string;
     complement?: string;
+    reference?: string;
   };
   observations?: string;
+  paymentMethod?: 'pix' | 'card' | 'cash'; // Forma de pagamento
+  needsChange?: boolean; // Se precisa de troco (para dinheiro)
+  changeAmount?: string; // Valor do troco
   orderNo: string;
   managerPhone: string;
   tenantId: string;
@@ -174,7 +178,7 @@ export async function sendOrderSummaryToWhatsApp(params: SendOrderSummaryParams)
 
     const addressText =
       params.deliveryType === 'delivery' && params.address
-        ? `📍 ${params.address.street}, ${params.address.number}${params.address.complement ? ', ' + params.address.complement : ''}\n   ${params.address.neighborhood}`
+        ? `📍 ${params.address.street}, ${params.address.number}${params.address.complement ? ', ' + params.address.complement : ''}\n   📌 Bairro: ${params.address.neighborhood}${params.address.reference ? '\n   🔖 Referência: ' + params.address.reference : ''}`
         : `🏪 Retirada no local`;
 
     // Montar linha de descontos
@@ -186,6 +190,19 @@ export async function sendOrderSummaryToWhatsApp(params: SendOrderSummaryParams)
       discountsText += `⭐ Desconto (Pontos): -R$ ${params.pointsDiscount.toFixed(2)}\n`;
     }
 
+    // Montar linha de pagamento
+    let paymentText = '';
+    if (params.paymentMethod === 'pix') {
+      paymentText = '💳 Pagamento: PIX';
+    } else if (params.paymentMethod === 'card') {
+      paymentText = '💳 Pagamento: Cartão/Débito';
+    } else if (params.paymentMethod === 'cash') {
+      paymentText = '💵 Pagamento: Dinheiro';
+      if (params.needsChange && params.changeAmount) {
+        paymentText += ` - Troco para: R$ ${params.changeAmount}`;
+      }
+    }
+
     const message = `📦 NOVO PEDIDO #${params.orderNo}
 
 👤 Cliente: ${params.customerName}
@@ -195,11 +212,12 @@ ${params.customerEmail ? `📧 Email: ${params.customerEmail}\n` : ''}
 ${itemsText}
 
 Subtotal: R$ ${params.subtotal.toFixed(2)}
-${discountsText}Entrega: R$ ${params.deliveryFee.toFixed(2)}
+${discountsText}🚚 Entrega: R$ ${params.deliveryFee.toFixed(2)}
 💰 Total: R$ ${params.total.toFixed(2)}
 
 ${addressText}
 ${params.deliveryType === 'delivery' ? '\n🚗 Tipo: Entrega' : '\n🚗 Tipo: Retirada'}
+${paymentText ? '\n' + paymentText : ''}
 ${params.observations ? `\n📝 Observações: ${params.observations}` : ''}`;
 
     console.log('📤 [WHATSAPP] Mensagem formatada:\n', message);
