@@ -244,24 +244,25 @@ export function CheckoutModal() {
     }
   }, [isCheckoutOpen]);
 
-  // ✅ FORCE SETTINGS REFRESH: Monitorar atualizações de settings do admin
+  // ✅ FORCE SETTINGS REFRESH: Usar Zustand subscribe para detectar mudanças
   useEffect(() => {
-    const handleSettingsUpdate = () => {
-      // Forçar re-render para pegar settings.phone atualizado
-      console.log('🔄 [CHECKOUT] Settings atualizadas, phone agora:', settings.phone);
-    };
-
-    const settingsUpdateListener = () => handleSettingsUpdate();
-    window.addEventListener('storage', (e) => {
-      if (e.key === 'settings-updated') {
-        settingsUpdateListener();
+    const unsubscribe = useSettingsStore.subscribe(
+      (state) => ({
+        phone: state.settings.phone,
+        sendOrderSummaryToWhatsApp: state.settings.sendOrderSummaryToWhatsApp,
+      }),
+      (current, previous) => {
+        if (current.sendOrderSummaryToWhatsApp !== previous.sendOrderSummaryToWhatsApp) {
+          console.log('🔄 [CHECKOUT] Resumo WhatsApp alterado para:', current.sendOrderSummaryToWhatsApp);
+        }
+        if (current.phone !== previous.phone) {
+          console.log('🔄 [CHECKOUT] Telefone atualizado para:', current.phone);
+        }
       }
-    });
+    );
 
-    return () => {
-      window.removeEventListener('storage', settingsUpdateListener);
-    };
-  }, [settings.phone]);
+    return () => unsubscribe();
+  }, []);
 
   // 🔴 REALTIME: Sincronizar pontos do cliente em tempo real
   // Detecta quando outro navegador/aba usa os mesmos pontos (previne fraude)
@@ -772,6 +773,7 @@ export function CheckoutModal() {
           };
         });
         
+        console.log('✅ [CHECKOUT] Enviando resumo WhatsApp - flag ativo:', settings.sendOrderSummaryToWhatsApp);
         console.log('📋 [WHATSAPP] Items com detalhes:', JSON.stringify(itemsWithDetails, null, 2));
         console.log('📱 [WHATSAPP] Enviando para telefone do gerente:', settings.phone);
         
@@ -805,6 +807,12 @@ export function CheckoutModal() {
         console.warn('⚠️ Erro ao enviar resumo para WhatsApp:', error);
         // Não quebra o fluxo se falhar
       }
+    } else {
+      console.log('⏸️ [CHECKOUT] Resumo WhatsApp não enviado - Motivo:', {
+        sendOrderSummaryToWhatsApp: settings.sendOrderSummaryToWhatsApp,
+        phone: settings.phone,
+        areConditionsMet: settings.sendOrderSummaryToWhatsApp && settings.phone,
+      });
     }
 
     // �🔒 CRÍTICO: Se cliente usou pontos, sincronizar IMEDIATAMENTE com BD
