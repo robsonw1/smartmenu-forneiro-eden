@@ -48,6 +48,7 @@ import {
   CreditCard,
   Bell,
   MessageCircle,
+  BarChart3,
 } from 'lucide-react';
 import {
   Product,
@@ -71,6 +72,7 @@ import { LoyaltySettingsPanel } from '@/components/admin/LoyaltySettingsPanel';
 import { FaithfulCustomersAdmin } from '@/components/admin/FaithfulCustomersAdmin';
 import { CouponManagementPanel } from '@/components/admin/CouponManagementPanel';
 import { PaymentSettingsPanel } from '@/components/admin/PaymentSettingsPanel';
+import { AnalyticsPanel } from '@/components/admin/AnalyticsPanel';
 import { toast } from 'sonner';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -682,6 +684,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="notifications" className="gap-2">
               <Bell className="w-4 h-4" />
               Notificações
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Relatórios
             </TabsTrigger>
           </TabsList>
 
@@ -1383,6 +1389,11 @@ const AdminDashboard = () => {
           {/* Notifications Tab */}
           <TabsContent value="notifications">
             <NotificationsTab />
+          </TabsContent>
+
+          {/* Analytics Tab */}
+          <TabsContent value="analytics">
+            <AnalyticsPanel />
           </TabsContent>
         </Tabs>
       </div>
