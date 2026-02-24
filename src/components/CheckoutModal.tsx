@@ -245,22 +245,57 @@ export function CheckoutModal() {
   }, [isCheckoutOpen]);
 
   // ✅ FORCE SETTINGS REFRESH: Usar Zustand subscribe para detectar mudanças
-  // ✅ FORCE SETTINGS REFRESH: Monitorar atualizações via localStorage
+  // ✅ FORCE SETTINGS REFRESH: Re-fetch settings do Supabase quando checkout abre
   useEffect(() => {
-    const handleSettingsUpdate = () => {
-      console.log('🔄 [CHECKOUT] Settings atualizadas - phone:', settings.phone, 'sendOrderSummaryToWhatsApp:', settings.sendOrderSummaryToWhatsApp);
+    if (!isCheckoutOpen) return;
+
+    const refreshSettingsFromSupabase = async () => {
+      try {
+        const { data: settingsData } = await supabase
+          .from('settings')
+          .select('*')
+          .eq('id', 'store-settings')
+          .single();
+        
+        if (settingsData) {
+          const valueData = (settingsData as any).value || {};
+          console.log('🔄 [CHECKOUT] Settings re-sincronizados do Supabase:', {
+            sendOrderSummaryToWhatsApp: valueData.sendOrderSummaryToWhatsApp,
+            phone: valueData.phone,
+          });
+          
+          // Atualizar o store se houver mudanças
+          const settingsStore = useSettingsStore.getState();
+          settingsStore.updateSettings({
+            sendOrderSummaryToWhatsApp: valueData.sendOrderSummaryToWhatsApp !== undefined ? valueData.sendOrderSummaryToWhatsApp : false,
+            phone: valueData.phone || settings.phone,
+          });
+        }
+      } catch (error) {
+        console.error('⚠️ [CHECKOUT] Erro ao re-sincronizar settings:', error);
+      }
+    };
+
+    refreshSettingsFromSupabase();
+
+    const handleStorageUpdate = () => {
+      console.log('📢 [CHECKOUT] localStorage.settings-updated detectado');
+      console.log('📢 [CHECKOUT] Settings atuais:', {
+        sendOrderSummaryToWhatsApp: settings.sendOrderSummaryToWhatsApp,
+        phone: settings.phone,
+      });
     };
 
     window.addEventListener('storage', (e) => {
       if (e.key === 'settings-updated') {
-        handleSettingsUpdate();
+        handleStorageUpdate();
       }
     });
 
     return () => {
-      window.removeEventListener('storage', handleSettingsUpdate);
+      window.removeEventListener('storage', handleStorageUpdate);
     };
-  }, [settings.phone, settings.sendOrderSummaryToWhatsApp]);
+  }, [isCheckoutOpen]);
 
   // 🔴 REALTIME: Sincronizar pontos do cliente em tempo real
   // Detecta quando outro navegador/aba usa os mesmos pontos (previne fraude)
@@ -715,6 +750,20 @@ export function CheckoutModal() {
         // Formatar número do pedido
         const orderNo = createdOrder.id || `PED-${Date.now()}`;
         
+        // CRÍTICO: Usar settings fresco do store
+        const storeSettings = useSettingsStore.getState().settings;
+        console.log('🔍 [CHECKOUT] Verificando resumo WhatsApp (store atual):', {
+          sendOrderSummaryToWhatsApp: storeSettings.sendOrderSummaryToWhatsApp,
+          phone: storeSettings.phone,
+          shouldSend: storeSettings.sendOrderSummaryToWhatsApp && storeSettings.phone,
+        });
+        
+        // Se a flag foi desativada no meio do processo, não enviar
+        if (!storeSettings.sendOrderSummaryToWhatsApp) {
+          console.log('⏸️ [CHECKOUT] Resumo WhatsApp cancelado - flag desativada');
+          return;
+        }
+        
         // Mapear items com detalhes completos
         const itemsWithDetails = items.map((item) => {
           const details: string[] = [];
@@ -771,9 +820,9 @@ export function CheckoutModal() {
           };
         });
         
-        console.log('✅ [CHECKOUT] Enviando resumo WhatsApp - flag ativo:', settings.sendOrderSummaryToWhatsApp);
+        console.log('✅ [CHECKOUT] Enviando resumo WhatsApp - flag ativo:', storeSettings.sendOrderSummaryToWhatsApp);
         console.log('📋 [WHATSAPP] Items com detalhes:', JSON.stringify(itemsWithDetails, null, 2));
-        console.log('📱 [WHATSAPP] Enviando para telefone do gerente:', settings.phone);
+        console.log('📱 [WHATSAPP] Enviando para telefone do gerente:', storeSettings.phone);
         
         // Enviar resumo formatado
         await sendOrderSummaryToWhatsApp({
@@ -797,7 +846,7 @@ export function CheckoutModal() {
           } : undefined,
           observations,
           orderNo,
-          managerPhone: settings.phone,
+          managerPhone: storeSettings.phone,
           tenantId: tenantId || '',
         });
         console.log('📱 Resumo do pedido enviado para WhatsApp');
