@@ -761,6 +761,8 @@ export function CheckoutModal() {
       appliedCoupon: orderPayload.totals.appliedCoupon,
       status: 'pending',
       observations,
+      needsChange: paymentMethod === 'cash' ? needsChange : false,
+      changeAmount: paymentMethod === 'cash' && needsChange ? changeAmount : undefined,
       tenantId: tenantId || '', // ✅ CRÍTICO: Sempre enviar (vazio ou não - useOrdersStore trata fallback)
     }, shouldAutoPrint);
     
@@ -901,8 +903,12 @@ export function CheckoutModal() {
             number: address.number,
             neighborhood: selectedNeighborhood?.name || '',
             complement: address.complement,
+            reference: address.reference,
           } : undefined,
           observations,
+          paymentMethod,
+          needsChange: paymentMethod === 'cash' ? needsChange : false,
+          changeAmount: paymentMethod === 'cash' && needsChange ? changeAmount : undefined,
           orderNo,
           managerPhone: storeSettings.phone,
           tenantId: tenantId || '',
