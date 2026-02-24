@@ -245,24 +245,22 @@ export function CheckoutModal() {
   }, [isCheckoutOpen]);
 
   // ✅ FORCE SETTINGS REFRESH: Usar Zustand subscribe para detectar mudanças
+  // ✅ FORCE SETTINGS REFRESH: Monitorar atualizações via localStorage
   useEffect(() => {
-    const unsubscribe = useSettingsStore.subscribe(
-      (state) => ({
-        phone: state.settings.phone,
-        sendOrderSummaryToWhatsApp: state.settings.sendOrderSummaryToWhatsApp,
-      }),
-      (current, previous) => {
-        if (current.sendOrderSummaryToWhatsApp !== previous.sendOrderSummaryToWhatsApp) {
-          console.log('🔄 [CHECKOUT] Resumo WhatsApp alterado para:', current.sendOrderSummaryToWhatsApp);
-        }
-        if (current.phone !== previous.phone) {
-          console.log('🔄 [CHECKOUT] Telefone atualizado para:', current.phone);
-        }
-      }
-    );
+    const handleSettingsUpdate = () => {
+      console.log('🔄 [CHECKOUT] Settings atualizadas - phone:', settings.phone, 'sendOrderSummaryToWhatsApp:', settings.sendOrderSummaryToWhatsApp);
+    };
 
-    return () => unsubscribe();
-  }, []);
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'settings-updated') {
+        handleSettingsUpdate();
+      }
+    });
+
+    return () => {
+      window.removeEventListener('storage', handleSettingsUpdate);
+    };
+  }, [settings.phone, settings.sendOrderSummaryToWhatsApp]);
 
   // 🔴 REALTIME: Sincronizar pontos do cliente em tempo real
   // Detecta quando outro navegador/aba usa os mesmos pontos (previne fraude)
