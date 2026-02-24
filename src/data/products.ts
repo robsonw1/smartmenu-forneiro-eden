@@ -81,6 +81,7 @@ export interface Order {
   total: number;
   pointsDiscount?: number;
   pointsRedeemed?: number;
+  pendingPoints?: number;
   couponDiscount?: number;
   appliedCoupon?: string;
   status: 'pending' | 'confirmed' | 'preparing' | 'delivering' | 'delivered' | 'cancelled';
