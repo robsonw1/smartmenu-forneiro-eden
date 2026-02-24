@@ -883,32 +883,14 @@ export function CheckoutModal() {
         console.log('✅ [CHECKOUT] Enviando resumo WhatsApp - flag ativo:', storeSettings.sendOrderSummaryToWhatsApp);
         console.log('📋 [WHATSAPP] Items com detalhes:', JSON.stringify(itemsWithDetails, null, 2));
         console.log('📱 [WHATSAPP] Enviando para telefone do gerente:', storeSettings.phone);
-        console.log('📱 [WHATSAPP-CHECKOUT] Estado atual do formulário:', {
-          paymentMethod: paymentMethod,
-          needsChange: needsChange,
-          changeAmount: changeAmount,
-          observations: observations,
-          deliveryType: deliveryType,
-        });
-        console.log('📝 [WHATSAPP-CHECKOUT] Lendo valores do estado antes de enviar...');
-        
-        // Verificar valores no momento do envio
-        const checkoutState = {
-          paymentMethod,
-          needsChange,
-          changeAmount,
-          observations,
-        };
-        console.log('📝 [WHATSAPP-CHECKOUT] Valores confirmados:', checkoutState);
-        console.log('📱 [WHATSAPP] Dados completos antes de enviar:', {
-          paymentMethod,
-          needsChange,
-          changeAmount,
-          observations,
-          reference: address.reference,
-          neighborhood: selectedNeighborhood?.name,
-          address: address.street,
-        });
+        console.log('� [DEBUG-CRUCIAL] Valores ANTES de chamar sendOrderSummaryToWhatsApp:');
+        console.log('  - paymentMethod:', paymentMethod, 'tipo:', typeof paymentMethod);
+        console.log('  - needsChange:', needsChange, 'tipo:', typeof needsChange);
+        console.log('  - changeAmount:', changeAmount, 'tipo:', typeof changeAmount);
+        console.log('  - observations:', observations, 'tipo:', typeof observations);
+        console.log('  - address.reference:', address.reference, 'tipo:', typeof address.reference);
+        console.log('  - deliveryType:', deliveryType);
+        console.log('  - selectedNeighborhood:', selectedNeighborhood?.name);
         
         // Enviar resumo formatado
         await sendOrderSummaryToWhatsApp({
@@ -939,6 +921,7 @@ export function CheckoutModal() {
           managerPhone: storeSettings.phone,
           tenantId: tenantId || '',
         });
+        console.log('🔴 [DEBUG-AFTER] sendOrderSummaryToWhatsApp foi chamado com os dados acima');
         console.log('📱 Resumo do pedido enviado para WhatsApp');
       } catch (error) {
         console.warn('⚠️ Erro ao enviar resumo para WhatsApp:', error);
@@ -1606,7 +1589,7 @@ export function CheckoutModal() {
                           id="number"
                           placeholder="123"
                           value={address.number}
-                          onChange={(e) => setAddress({ number: e.target.value })}
+                          onChange={(e) => setAddress({ ...address, number: e.target.value })}
                           className="mt-1"
                         />
                       </div>
@@ -1616,7 +1599,7 @@ export function CheckoutModal() {
                           id="complement"
                           placeholder="Apto, Bloco..."
                           value={address.complement}
-                          onChange={(e) => setAddress({ complement: e.target.value })}
+                          onChange={(e) => setAddress({ ...address, complement: e.target.value })}
                           className="mt-1"
                         />
                       </div>
@@ -1628,7 +1611,7 @@ export function CheckoutModal() {
                         id="reference"
                         placeholder="Próximo ao..."
                         value={address.reference}
-                        onChange={(e) => setAddress({ reference: e.target.value })}
+                        onChange={(e) => setAddress({ ...address, reference: e.target.value })}
                         className="mt-1"
                       />
                     </div>
