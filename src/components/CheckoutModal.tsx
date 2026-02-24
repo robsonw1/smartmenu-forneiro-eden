@@ -883,6 +883,32 @@ export function CheckoutModal() {
         console.log('✅ [CHECKOUT] Enviando resumo WhatsApp - flag ativo:', storeSettings.sendOrderSummaryToWhatsApp);
         console.log('📋 [WHATSAPP] Items com detalhes:', JSON.stringify(itemsWithDetails, null, 2));
         console.log('📱 [WHATSAPP] Enviando para telefone do gerente:', storeSettings.phone);
+        console.log('📱 [WHATSAPP-CHECKOUT] Estado atual do formulário:', {
+          paymentMethod: paymentMethod,
+          needsChange: needsChange,
+          changeAmount: changeAmount,
+          observations: observations,
+          deliveryType: deliveryType,
+        });
+        console.log('📝 [WHATSAPP-CHECKOUT] Lendo valores do estado antes de enviar...');
+        
+        // Verificar valores no momento do envio
+        const checkoutState = {
+          paymentMethod,
+          needsChange,
+          changeAmount,
+          observations,
+        };
+        console.log('📝 [WHATSAPP-CHECKOUT] Valores confirmados:', checkoutState);
+        console.log('📱 [WHATSAPP] Dados completos antes de enviar:', {
+          paymentMethod,
+          needsChange,
+          changeAmount,
+          observations,
+          reference: address.reference,
+          neighborhood: selectedNeighborhood?.name,
+          address: address.street,
+        });
         
         // Enviar resumo formatado
         await sendOrderSummaryToWhatsApp({
