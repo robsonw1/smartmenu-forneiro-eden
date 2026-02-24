@@ -319,13 +319,30 @@ const AdminDashboard = () => {
   // Alternar envio de resumo de pedidos para WhatsApp
   const handleOrderSummaryToWhatsAppToggle = async () => {
     try {
-      const newState = !settingsForm.sendOrderSummaryToWhatsApp;
-      setSettingsForm({ ...settingsForm, sendOrderSummaryToWhatsApp: newState });
-      console.log('💬 [ADMIN] Alternando resumo WhatsApp para:', newState);
-      await updateSettings({ ...settingsForm, sendOrderSummaryToWhatsApp: newState });
-      console.log('✅ [ADMIN] Resumo WhatsApp salvo no Supabase:', newState);
-      // Force refresh in other components
+      const currentState = settingsForm.sendOrderSummaryToWhatsApp;
+      const newState = !currentState;
+      
+      console.log('💬 [ADMIN] TOGGLE iniciado');
+      console.log('💬 [ADMIN] Estado atual:', currentState);
+      console.log('💬 [ADMIN] Novo estado:', newState);
+      
+      // Atualizar local state imediatamente
+      const newSettingsForm = { ...settingsForm, sendOrderSummaryToWhatsApp: newState };
+      setSettingsForm(newSettingsForm);
+      console.log('💬 [ADMIN] setSettingsForm executado com:', newSettingsForm.sendOrderSummaryToWhatsApp);
+      
+      // Salvar no Supabase
+      await updateSettings(newSettingsForm);
+      console.log('✅ [ADMIN] updateSettings concluído');
+      
+      // Verificar o novo valor na store após atualização
+      const storeSettings = useSettingsStore.getState().settings;
+      console.log('✅ [ADMIN] Valor na store após updateSettings:', storeSettings.sendOrderSummaryToWhatsApp);
+      
+      // Force refresh em outros componentes
       localStorage.setItem('settings-updated', Date.now().toString());
+      console.log('✅ [ADMIN] localStorage.settings-updated definido');
+      
       toast.success(newState ? '💬 Resumo de pedidos via WhatsApp ativado' : '💬 Resumo de pedidos via WhatsApp desativado');
     } catch (error) {
       console.error('❌ Erro ao sincronizar resumo WhatsApp:', error);
