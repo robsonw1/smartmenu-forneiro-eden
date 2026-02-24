@@ -321,10 +321,14 @@ const AdminDashboard = () => {
     try {
       const newState = !settingsForm.sendOrderSummaryToWhatsApp;
       setSettingsForm({ ...settingsForm, sendOrderSummaryToWhatsApp: newState });
+      console.log('💬 [ADMIN] Alternando resumo WhatsApp para:', newState);
       await updateSettings({ ...settingsForm, sendOrderSummaryToWhatsApp: newState });
+      console.log('✅ [ADMIN] Resumo WhatsApp salvo no Supabase:', newState);
+      // Force refresh in other components
+      localStorage.setItem('settings-updated', Date.now().toString());
       toast.success(newState ? '💬 Resumo de pedidos via WhatsApp ativado' : '💬 Resumo de pedidos via WhatsApp desativado');
     } catch (error) {
-      console.error('Erro ao sincronizar resumo WhatsApp:', error);
+      console.error('❌ Erro ao sincronizar resumo WhatsApp:', error);
       toast.error('Erro ao atualizar resumo WhatsApp');
     }
   };
@@ -500,10 +504,15 @@ const AdminDashboard = () => {
 
   const handleSaveSettings = async () => {
     // Atualizar o store e salvar no Supabase
+    console.log('💾 [ADMIN] Salvando configurações:', {
+      phone: settingsForm.phone,
+      sendOrderSummaryToWhatsApp: settingsForm.sendOrderSummaryToWhatsApp,
+    });
     await updateSettings(settingsForm);
     
     // Force settings refresh in CheckoutModal
     localStorage.setItem('settings-updated', Date.now().toString());
+    console.log('✅ [ADMIN] Configurações salvas e sincronizadas');
     
     toast.success('Configurações salvas com sucesso!');
   };
