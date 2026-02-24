@@ -1577,7 +1577,7 @@ export function CheckoutModal() {
                         id="street"
                         placeholder="Nome da rua"
                         value={address.street}
-                        onChange={(e) => setAddress({ street: e.target.value })}
+                        onChange={(e) => setAddress({ ...address, street: e.target.value })}
                         className="mt-1"
                       />
                     </div>
