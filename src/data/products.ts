@@ -17,6 +17,20 @@ export interface Product {
   isCustomizable?: boolean; // For Moda do Cliente
 }
 
+export interface ComboPizza extends Product {
+  isHalfHalf?: boolean;
+  secondHalf?: Product;
+}
+
+export interface ComboPizzaData {
+  pizzaNumber: number;
+  pizzaId: string;
+  pizzaName: string;
+  isHalfHalf: boolean;
+  secondHalfId?: string;
+  secondHalfName?: string;
+}
+
 export interface CartItem {
   id: string;
   product: Product;
@@ -28,7 +42,8 @@ export interface CartItem {
   extras?: Product[];
   drink?: Product;
   isDrinkFree?: boolean;
-  comboPizzaFlavors?: Product[]; // Selected pizza flavors for combos
+  comboPizzaFlavors?: ComboPizza[]; // Selected pizza flavors for combos with half-half support
+  comboPizzasData?: ComboPizzaData[]; // Explicit combo pizza data (more reliable for serialization)
   customIngredients?: string[]; // For Moda do Cliente (free ingredients)
   paidIngredients?: string[]; // For Moda do Cliente (paid extras)
   notes?: string;
