@@ -159,6 +159,17 @@ export async function testEvolutionConnection(
  */
 export async function sendOrderSummaryToWhatsApp(params: SendOrderSummaryParams): Promise<void> {
   try {
+    console.log('🔍 [WHATSAPP-DEBUG] Parâmetros recebidos:', {
+      orderId: params.orderId,
+      customerName: params.customerName,
+      paymentMethod: params.paymentMethod,
+      needsChange: params.needsChange,
+      changeAmount: params.changeAmount,
+      observations: params.observations,
+      deliveryType: params.deliveryType,
+      address: params.address,
+    });
+    
     if (!params.orderId || !params.managerPhone || !params.tenantId) {
       console.warn('⚠️ [Resumo WhatsApp] Parâmetros incompletos:', params);
       return;
@@ -181,6 +192,13 @@ export async function sendOrderSummaryToWhatsApp(params: SendOrderSummaryParams)
         ? `📍 ${params.address.street}, ${params.address.number}${params.address.complement ? ', ' + params.address.complement : ''}\n   📌 Bairro: ${params.address.neighborhood}${params.address.reference ? '\n   🔖 Referência: ' + params.address.reference : ''}`
         : `🏪 Retirada no local`;
 
+    console.log('📍 [WHATSAPP] Endereço construído:', {
+      deliveryType: params.deliveryType,
+      hasAddress: !!params.address,
+      addressText,
+      reference: params.address?.reference,
+    });
+
     // Montar linha de descontos
     let discountsText = '';
     if (params.couponDiscount && params.couponDiscount > 0) {
@@ -192,6 +210,12 @@ export async function sendOrderSummaryToWhatsApp(params: SendOrderSummaryParams)
 
     // Montar linha de pagamento
     let paymentText = '';
+    console.log('💳 [WHATSAPP] Debug pagamento:', {
+      paymentMethod: params.paymentMethod,
+      needsChange: params.needsChange,
+      changeAmount: params.changeAmount,
+    });
+    
     if (params.paymentMethod === 'pix') {
       paymentText = '💳 Pagamento: PIX';
     } else if (params.paymentMethod === 'card') {
@@ -202,12 +226,15 @@ export async function sendOrderSummaryToWhatsApp(params: SendOrderSummaryParams)
         paymentText += ` - Troco para: R$ ${params.changeAmount}`;
       }
     }
+    
+    console.log('💳 [WHATSAPP] paymentText montado:', paymentText);
+    console.log('📝 [WHATSAPP] observations:', params.observations);
 
     const message = `📦 NOVO PEDIDO #${params.orderNo}
 
 👤 Cliente: ${params.customerName}
 📱 Telefone: ${params.customerPhone}
-${params.customerEmail ? `📧 Email: ${params.customerEmail}\n` : ''}
+${params.customerEmail ? `📧 Email: ${params.customerEmail}` : ''}
 🛍️ Itens:
 ${itemsText}
 
@@ -216,11 +243,18 @@ ${discountsText}🚚 Entrega: R$ ${params.deliveryFee.toFixed(2)}
 💰 Total: R$ ${params.total.toFixed(2)}
 
 ${addressText}
-${params.deliveryType === 'delivery' ? '\n🚗 Tipo: Entrega' : '\n🚗 Tipo: Retirada'}
-${paymentText ? '\n' + paymentText : ''}
-${params.observations ? `\n📝 Observações: ${params.observations}` : ''}`;
 
-    console.log('📤 [WHATSAPP] Mensagem formatada:\n', message);
+🚗 Tipo: ${params.deliveryType === 'delivery' ? 'Entrega' : 'Retirada'}
+${paymentText ? paymentText : ''}
+${params.observations ? `📝 Observações: ${params.observations}` : ''}`;
+
+    console.log('📤 [WHATSAPP] =============== MENSAGEM FINAL ===============');
+    console.log(message);
+    console.log('📤 [WHATSAPP] componentes da mensagem:');
+    console.log('  - addressText:', addressText);
+    console.log('  - paymentText:', paymentText);
+    console.log('  - observations:', params.observations);
+    console.log('📤 [WHATSAPP] ============================================');
     console.log('📤 [WHATSAPP] Enviando para telefone:', params.managerPhone);
 
     // Invocar Edge Function send-order-summary-whatsapp
