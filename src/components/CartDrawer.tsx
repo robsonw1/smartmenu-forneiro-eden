@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import pizzaImage from '@/assets/pizza-hero.jpg';
 
 export function CartDrawer() {
-  const { isCartOpen, setCartOpen, setCheckoutOpen, setSchedulingMode } = useUIStore();
+  const { isCartOpen, setCartOpen, setCheckoutOpen, setSchedulingCheckoutOpen } = useUIStore();
   const { items, removeItem, updateQuantity, getSubtotal, clearCart } = useCartStore();
 
   const formatPrice = (price: number) => {
@@ -23,15 +23,13 @@ export function CartDrawer() {
   };
 
   const handleCheckout = () => {
-    setSchedulingMode(false);
     setCartOpen(false);
     setCheckoutOpen(true);
   };
 
   const handleScheduledOrder = () => {
-    setSchedulingMode(true);
     setCartOpen(false);
-    setCheckoutOpen(true);
+    setSchedulingCheckoutOpen(true);
   };
 
   const subtotal = getSubtotal();
