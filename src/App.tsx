@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useRealtimeSync } from "@/hooks/use-realtime-sync";
 import { useLoyaltySettingsStore } from "@/store/useLoyaltySettingsStore";
+import { useSettingsStore } from "@/store/useSettingsStore";
 import Index from "./pages/Index.tsx";
 import AdminLogin from "./pages/AdminLogin.tsx";
 import AdminDashboard from "./pages/AdminDashboard.tsx";
@@ -17,11 +18,13 @@ const queryClient = new QueryClient();
 const AppContent = () => {
   useRealtimeSync();
   const { loadSettings } = useLoyaltySettingsStore();
+  const { loadSettingsFromSupabase } = useSettingsStore();
 
   // Carregar configurações de fidelização ao iniciar
   useEffect(() => {
     loadSettings();
-  }, [loadSettings]);
+    loadSettingsFromSupabase();
+  }, [loadSettings, loadSettingsFromSupabase]);
   
   return (
     <Routes>
