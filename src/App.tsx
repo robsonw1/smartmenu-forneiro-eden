@@ -18,13 +18,11 @@ const queryClient = new QueryClient();
 const AppContent = () => {
   useRealtimeSync();
   const { loadSettings } = useLoyaltySettingsStore();
-  const { loadSettingsFromSupabase } = useSettingsStore();
 
   // Carregar configurações de fidelização ao iniciar
   useEffect(() => {
     loadSettings();
-    loadSettingsFromSupabase();
-  }, [loadSettings, loadSettingsFromSupabase]);
+  }, [loadSettings]);
   
   return (
     <Routes>
