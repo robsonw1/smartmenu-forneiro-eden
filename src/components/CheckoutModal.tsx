@@ -47,12 +47,13 @@ import {
   AlertCircle,
   Gift,
   XCircle,
-  Star
+  Star,
+  Clock
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 
-type Step = 'contact' | 'address' | 'delivery' | 'payment' | 'pix' | 'confirmation';
+type Step = 'contact' | 'address' | 'delivery' | 'scheduling' | 'payment' | 'pix' | 'confirmation';
 
 interface PixData {
   qrCode: string;
@@ -75,6 +76,8 @@ export function CheckoutModal() {
     changeAmount,
     saveAsDefault,
     pointsToRedeem,
+    scheduledDate,
+    scheduledTime,
     setCustomer,
     setAddress,
     setDeliveryType,
@@ -85,6 +88,8 @@ export function CheckoutModal() {
     setChangeAmount,
     setSaveAsDefault,
     setPointsToRedeem,
+    setScheduledDate,
+    setScheduledTime,
     calculatePointsDiscount,
     getDeliveryFee,
     reset,
@@ -499,6 +504,15 @@ export function CheckoutModal() {
           return false;
         }
         return true;
+      case 'scheduling':
+        // Skip validation if scheduling is disabled
+        if (!settings.enableScheduling) return true;
+        // Validate scheduling fields
+        if (!scheduledDate || !scheduledTime) {
+          toast.error('Por favor, selecione a data e hora do agendamento');
+          return false;
+        }
+        return true;
       case 'payment':
         // CPF é obrigatório APENAS para PIX
         if (paymentMethod === 'pix') {
@@ -518,12 +532,17 @@ export function CheckoutModal() {
   };
 
   const nextStep = () => {
-    const baseSteps: Step[] = ['contact', 'delivery', 'address', 'payment'];
+    const baseSteps: Step[] = ['contact', 'delivery', 'address', 'scheduling', 'payment'];
     
     // Skip address step if pickup
     let steps = baseSteps;
     if (deliveryType === 'pickup') {
-      steps = ['contact', 'delivery', 'payment'];
+      steps = ['contact', 'delivery', 'scheduling', 'payment'];
+    }
+
+    // Skip scheduling step if not enabled
+    if (!settings.enableScheduling) {
+      steps = steps.filter(s => s !== 'scheduling');
     }
     
     const currentIndex = steps.indexOf(step as any);
@@ -536,12 +555,17 @@ export function CheckoutModal() {
   };
 
   const prevStep = () => {
-    const baseSteps: Step[] = ['contact', 'delivery', 'address', 'payment'];
+    const baseSteps: Step[] = ['contact', 'delivery', 'address', 'scheduling', 'payment'];
     
     // Skip address step if pickup
     let steps = baseSteps;
     if (deliveryType === 'pickup') {
-      steps = ['contact', 'delivery', 'payment'];
+      steps = ['contact', 'delivery', 'scheduling', 'payment'];
+    }
+
+    // Skip scheduling step if not enabled
+    if (!settings.enableScheduling) {
+      steps = steps.filter(s => s !== 'scheduling');
     }
     
     const currentIndex = steps.indexOf(step as any);
@@ -646,6 +670,10 @@ export function CheckoutModal() {
         estimatedTime: deliveryType === 'delivery' 
           ? `${settings.deliveryTimeMin}-${settings.deliveryTimeMax} min`
           : `${settings.pickupTimeMin}-${settings.pickupTimeMax} min`,
+        isScheduled: settings.enableScheduling && (!!scheduledDate && !!scheduledTime),
+        scheduledFor: scheduledDate && scheduledTime 
+          ? new Date(`${scheduledDate}T${scheduledTime}`).toISOString()
+          : undefined,
         ...(deliveryType === 'delivery' && {
           address: {
             street: address.street,
@@ -1652,6 +1680,74 @@ export function CheckoutModal() {
                           <Home className="w-4 h-4 text-primary" />
                         )}
                       </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step: Scheduling (Agendamento) */}
+              {step === 'scheduling' && settings.enableScheduling && (
+                <motion.div
+                  key="scheduling"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-4"
+                >
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-primary" />
+                    Agendar Pedido
+                  </h3>
+
+                  <p className="text-sm text-muted-foreground">
+                    Escolha a data e hora desejadas para receber seu pedido
+                  </p>
+
+                  <div className="space-y-3">
+                    {/* Date Selection */}
+                    <div>
+                      <Label htmlFor="scheduled-date">Data de Entrega/Retirada *</Label>
+                      <Input
+                        id="scheduled-date"
+                        type="date"
+                        value={scheduledDate || ''}
+                        onChange={(e) => setScheduledDate(e.target.value || null)}
+                        className="mt-1"
+                        min={new Date().toISOString().split('T')[0]}
+                        max={new Date(Date.now() + (settings.maxScheduleDays ?? 7) * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Mínimo {settings.minScheduleMinutes ?? 30} minutos de antecedência
+                      </p>
+                    </div>
+
+                    {/* Time Selection */}
+                    <div>
+                      <Label htmlFor="scheduled-time">Hora *</Label>
+                      <Input
+                        id="scheduled-time"
+                        type="time"
+                        value={scheduledTime || ''}
+                        onChange={(e) => setScheduledTime(e.target.value || null)}
+                        className="mt-1"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Selecione um horário dentro do funcionamento
+                      </p>
+                    </div>
+
+                    {/* Info Alert */}
+                    {scheduledDate && (
+                      <Alert className="bg-blue-50 border-blue-200">
+                        <Clock className="h-4 w-4 text-blue-600" />
+                        <AlertDescription className="text-blue-900">
+                          Seu pedido será {deliveryType === 'delivery' ? 'entregue' : 'retirado'} em{' '}
+                          <span className="font-semibold">
+                            {new Date(scheduledDate).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' })}
+                            {scheduledTime && ` às ${scheduledTime}`}
+                          </span>
+                        </AlertDescription>
+                      </Alert>
                     )}
                   </div>
                 </motion.div>
