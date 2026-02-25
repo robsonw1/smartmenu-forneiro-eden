@@ -90,7 +90,9 @@ const defaultSettings: StoreSettings = {
 
 const dayNames: (keyof WeekSchedule)[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
-export const useSettingsStore = create<SettingsStore>((set, get) => ({
+export const useSettingsStore = create<SettingsStore>()(
+  persist(
+    (set, get) => ({
   settings: defaultSettings,
 
   updateSettings: async (newSettings) => {
@@ -273,4 +275,9 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       return { success: false, message: 'Erro ao sincronizar configurações' };
     }
   },
-}));
+    }),
+    {
+      name: 'forneiro-eden-settings',
+    }
+  )
+);
