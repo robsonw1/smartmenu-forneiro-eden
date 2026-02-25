@@ -49,6 +49,7 @@ import {
   Bell,
   MessageCircle,
   BarChart3,
+  Clock,
 } from 'lucide-react';
 import {
   Product,
@@ -73,6 +74,7 @@ import { FaithfulCustomersAdmin } from '@/components/admin/FaithfulCustomersAdmi
 import { CouponManagementPanel } from '@/components/admin/CouponManagementPanel';
 import { PaymentSettingsPanel } from '@/components/admin/PaymentSettingsPanel';
 import { AnalyticsPanel } from '@/components/admin/AnalyticsPanel';
+import { SchedulingSettings } from '@/components/admin/SchedulingSettings';
 import { toast } from 'sonner';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -688,6 +690,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="analytics" className="gap-2">
               <BarChart3 className="w-4 h-4" />
               Relatórios
+            </TabsTrigger>
+            <TabsTrigger value="scheduling" className="gap-2">
+              <Clock className="w-4 h-4" />
+              Agendamento
             </TabsTrigger>
           </TabsList>
 
@@ -1394,6 +1400,11 @@ const AdminDashboard = () => {
           {/* Analytics Tab */}
           <TabsContent value="analytics">
             <AnalyticsPanel />
+          </TabsContent>
+
+          {/* Scheduling Tab */}
+          <TabsContent value="scheduling">
+            <SchedulingSettings />
           </TabsContent>
         </Tabs>
       </div>
