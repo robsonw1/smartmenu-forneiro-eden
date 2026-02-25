@@ -47,13 +47,12 @@ import {
   AlertCircle,
   Gift,
   XCircle,
-  Star,
-  Clock
+  Star
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 
-type Step = 'contact' | 'address' | 'delivery' | 'scheduling' | 'payment' | 'pix' | 'confirmation';
+type Step = 'contact' | 'address' | 'delivery' | 'payment' | 'pix' | 'confirmation';
 
 interface PixData {
   qrCode: string;
@@ -61,15 +60,6 @@ interface PixData {
   paymentId: string;
   expirationDate: string;
 }
-
-// 4-step flow: contact, delivery, address, payment (no scheduling)
-const getVisibleSteps = (deliveryType: string): Step[] => {
-  let steps: Step[] = ['contact', 'delivery', 'address', 'payment'];
-  if (deliveryType === 'pickup') {
-    steps = ['contact', 'delivery', 'payment'];
-  }
-  return steps;
-};
 
 export function CheckoutModal() {
   const { isCheckoutOpen, setCheckoutOpen, setCartOpen } = useUIStore();
@@ -85,8 +75,6 @@ export function CheckoutModal() {
     changeAmount,
     saveAsDefault,
     pointsToRedeem,
-    scheduledDate,
-    scheduledTime,
     setCustomer,
     setAddress,
     setDeliveryType,
@@ -97,8 +85,6 @@ export function CheckoutModal() {
     setChangeAmount,
     setSaveAsDefault,
     setPointsToRedeem,
-    setScheduledDate,
-    setScheduledTime,
     calculatePointsDiscount,
     getDeliveryFee,
     reset,
@@ -513,8 +499,6 @@ export function CheckoutModal() {
           return false;
         }
         return true;
-      case 'scheduling':
-        return true;
       case 'payment':
         // CPF é obrigatório APENAS para PIX
         if (paymentMethod === 'pix') {
@@ -534,16 +518,32 @@ export function CheckoutModal() {
   };
 
   const nextStep = () => {
-    const steps = getVisibleSteps(deliveryType);
+    const baseSteps: Step[] = ['contact', 'delivery', 'address', 'payment'];
+    
+    // Skip address step if pickup
+    let steps = baseSteps;
+    if (deliveryType === 'pickup') {
+      steps = ['contact', 'delivery', 'payment'];
+    }
+    
     const currentIndex = steps.indexOf(step as any);
+    
     if (!validateStep(step)) return;
+    
     if (currentIndex < steps.length - 1) {
       setStep(steps[currentIndex + 1]);
     }
   };
 
   const prevStep = () => {
-    const steps = getVisibleSteps(deliveryType);
+    const baseSteps: Step[] = ['contact', 'delivery', 'address', 'payment'];
+    
+    // Skip address step if pickup
+    let steps = baseSteps;
+    if (deliveryType === 'pickup') {
+      steps = ['contact', 'delivery', 'payment'];
+    }
+    
     const currentIndex = steps.indexOf(step as any);
     if (currentIndex > 0) {
       setStep(steps[currentIndex - 1]);
@@ -646,8 +646,6 @@ export function CheckoutModal() {
         estimatedTime: deliveryType === 'delivery' 
           ? `${settings.deliveryTimeMin}-${settings.deliveryTimeMax} min`
           : `${settings.pickupTimeMin}-${settings.pickupTimeMax} min`,
-        isScheduled: false,
-        scheduledFor: undefined,
         ...(deliveryType === 'delivery' && {
           address: {
             street: address.street,
@@ -765,8 +763,6 @@ export function CheckoutModal() {
       observations,
       needsChange: paymentMethod === 'cash' ? needsChange : false,
       changeAmount: paymentMethod === 'cash' && needsChange ? changeAmount : undefined,
-      isScheduled: false,
-      scheduledFor: undefined,
       tenantId: tenantId || '', // ✅ CRÍTICO: Sempre enviar (vazio ou não - useOrdersStore trata fallback)
     }, shouldAutoPrint);
     
@@ -1352,7 +1348,6 @@ export function CheckoutModal() {
   };
 
   const storeOpen = isStoreOpen();
-  const visibleSteps = getVisibleSteps(deliveryType);
 
   return (
     <>
@@ -1385,31 +1380,27 @@ export function CheckoutModal() {
             {/* Progress Steps */}
             {!['confirmation', 'pix'].includes(step) && (
               <div className="flex items-center justify-between mt-6 mb-8">
-                {visibleSteps.filter(s => s !== 'payment').map((s, i) => {
-                  const displaySteps = visibleSteps.filter(s => s !== 'payment');
-                  const currentStepIndex = displaySteps.indexOf(step as any);
-                  return (
-                    <div key={s} className="flex items-center">
-                      <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium
-                          ${step === s || currentStepIndex > i
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-secondary text-muted-foreground'
-                          }`}
-                      >
-                        {i + 1}
-                      </div>
-                      {i < displaySteps.length - 1 && (
-                        <div className={`w-8 md:w-16 h-1 mx-1 rounded
-                          ${currentStepIndex > i
-                            ? 'bg-primary'
-                            : 'bg-secondary'
-                          }`}
-                        />
-                      )}
+                {['contact', 'delivery', 'address', 'payment'].map((s, i) => (
+                  <div key={s} className="flex items-center">
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium
+                        ${step === s || ['contact', 'delivery', 'address', 'payment'].indexOf(step as any) > i
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-secondary text-muted-foreground'
+                        }`}
+                    >
+                      {i + 1}
                     </div>
-                  );
-                })}
+                    {i < 3 && (
+                      <div className={`w-8 md:w-16 h-1 mx-1 rounded
+                        ${['contact', 'delivery', 'address', 'payment'].indexOf(step as any) > i
+                          ? 'bg-primary'
+                          : 'bg-secondary'
+                        }`}
+                      />
+                    )}
+                  </div>
+                ))}
               </div>
             )}
 
@@ -2095,14 +2086,11 @@ export function CheckoutModal() {
                   </div>
                   
                   <h3 className="font-display text-2xl font-bold mb-2">
-                    {lastOrderPayload?.isScheduled ? 'Pedido Agendado! 🗓️' : 'Pedido Confirmado!'}
+                    Pedido Confirmado!
                   </h3>
                   
                   <p className="text-muted-foreground mb-6">
-                    {lastOrderPayload?.isScheduled 
-                      ? `Seu pedido foi agendado para ${lastOrderPayload.delivery?.scheduledFor ? new Date(lastOrderPayload.delivery.scheduledFor).toLocaleDateString('pt-BR') : 'em breve'}.`
-                      : 'Seu pedido foi recebido com sucesso.'
-                    }
+                    Seu pedido foi recebido com sucesso.
                     <br />
                     Você receberá atualizações pelo WhatsApp.
                   </p>
@@ -2112,11 +2100,6 @@ export function CheckoutModal() {
                       <p><span className="text-muted-foreground">Cliente:</span> {customer.name}</p>
                       <p><span className="text-muted-foreground">Telefone:</span> {customer.phone}</p>
                       <p><span className="text-muted-foreground">Entrega:</span> {deliveryType === 'delivery' ? 'Em domicílio' : 'Retirada'}</p>
-                      {lastOrderPayload?.isScheduled && lastOrderPayload.delivery?.scheduledFor && (
-                        <p className="text-primary font-medium">
-                          📅 Agendado para: {new Date(lastOrderPayload.delivery.scheduledFor).toLocaleString('pt-BR')}
-                        </p>
-                      )}
                       <p><span className="text-muted-foreground">Pagamento:</span> {getPaymentMethodLabel()}</p>
                       {lastPointsDiscount > 0 && (
                         <p className="text-green-600 font-medium">Desconto (Pontos): -{formatPrice(lastPointsDiscount)}</p>
