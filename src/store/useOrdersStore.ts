@@ -130,7 +130,11 @@ export const useOrdersStore = create<OrdersStore>()(
               observations: newOrder.observations,
               needs_change: newOrder.needsChange || false,
               is_scheduled: newOrder.isScheduled || false,
-              scheduled_for: newOrder.scheduledFor ? newOrder.scheduledFor.toISOString() : null,
+              scheduled_for: newOrder.scheduledFor 
+                ? (typeof newOrder.scheduledFor === 'string' 
+                    ? newOrder.scheduledFor 
+                    : newOrder.scheduledFor.toISOString())
+                : null,
               created_at: localISO,
               address: addressWithMetadata,
               tenant_id: finalTenantId, // ✅ CRÍTICO: Sempre com fallback
