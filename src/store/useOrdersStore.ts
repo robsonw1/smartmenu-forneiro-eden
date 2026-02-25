@@ -122,6 +122,7 @@ export const useOrdersStore = create<OrdersStore>()(
             points_redeemed: pointsRedeemed,
             pending_points: pendingPoints,
             payment_method: newOrder.paymentMethod,
+            change_amount: newOrder.changeAmount,
             is_scheduled: newOrder.isScheduled || false,
             scheduled_for: (() => {
               if (!newOrder.scheduledFor) return null;
@@ -132,6 +133,7 @@ export const useOrdersStore = create<OrdersStore>()(
               return null;
             })(),
             created_at: localISO,
+            address: addressWithMetadata,
             tenant_id: finalTenantId,
           };
           
