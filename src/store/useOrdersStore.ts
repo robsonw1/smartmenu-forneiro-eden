@@ -129,6 +129,7 @@ export const useOrdersStore = create<OrdersStore>()(
             delivery_reference: newOrder.address.reference,
             observations: newOrder.observations,
             needs_change: newOrder.needsChange || false,
+            change_amount: newOrder.changeAmount,
             is_scheduled: newOrder.isScheduled || false,
             scheduled_for: (() => {
               if (!newOrder.scheduledFor) return null;
