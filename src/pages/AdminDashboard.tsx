@@ -165,12 +165,7 @@ const AdminDashboard = () => {
     const token = localStorage.getItem('admin-token');
     if (!token) return;
 
-    // Sincronizar settings imediatamente ao entrar no admin
-    console.log('📥 Carregando configurações do Supabase...');
-    useSettingsStore.getState().loadSettingsFromSupabase();
-
     // Sincronizar imediatamente
-    console.log('📥 Sincronizando pedidos do Supabase...');
     syncOrdersFromSupabase();
 
     // Configurar intervalo para sincronizar a cada 3 segundos
