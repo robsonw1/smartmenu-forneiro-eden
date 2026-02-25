@@ -63,7 +63,7 @@ interface PixData {
 }
 
 export function CheckoutModal() {
-  const { isCheckoutOpen, setCheckoutOpen, setCartOpen } = useUIStore();
+  const { isCheckoutOpen, setCheckoutOpen, setCartOpen, isSchedulingMode, setSchedulingMode } = useUIStore();
   const { items, getSubtotal, clearCart } = useCartStore();
   const {
     customer,
@@ -540,8 +540,8 @@ export function CheckoutModal() {
       steps = ['contact', 'delivery', 'scheduling', 'payment'];
     }
 
-    // Skip scheduling step if not enabled
-    if (!settings.enableScheduling) {
+    // If scheduling is NOT enabled OR we're not in scheduling mode, skip scheduling step
+    if (!settings.enableScheduling || !isSchedulingMode) {
       steps = steps.filter(s => s !== 'scheduling');
     }
     
@@ -563,8 +563,8 @@ export function CheckoutModal() {
       steps = ['contact', 'delivery', 'scheduling', 'payment'];
     }
 
-    // Skip scheduling step if not enabled
-    if (!settings.enableScheduling) {
+    // If scheduling is NOT enabled OR we're not in scheduling mode, skip scheduling step
+    if (!settings.enableScheduling || !isSchedulingMode) {
       steps = steps.filter(s => s !== 'scheduling');
     }
     
@@ -670,8 +670,8 @@ export function CheckoutModal() {
         estimatedTime: deliveryType === 'delivery' 
           ? `${settings.deliveryTimeMin}-${settings.deliveryTimeMax} min`
           : `${settings.pickupTimeMin}-${settings.pickupTimeMax} min`,
-        isScheduled: settings.enableScheduling && (!!scheduledDate && !!scheduledTime),
-        scheduledFor: scheduledDate && scheduledTime 
+        isScheduled: isSchedulingMode && (!!scheduledDate && !!scheduledTime),
+        scheduledFor: (isSchedulingMode && scheduledDate && scheduledTime)
           ? new Date(`${scheduledDate}T${scheduledTime}`).toISOString()
           : undefined,
         ...(deliveryType === 'delivery' && {
@@ -791,8 +791,8 @@ export function CheckoutModal() {
       observations,
       needsChange: paymentMethod === 'cash' ? needsChange : false,
       changeAmount: paymentMethod === 'cash' && needsChange ? changeAmount : undefined,
-      isScheduled: settings.enableScheduling && (!!scheduledDate && !!scheduledTime),
-      scheduledFor: scheduledDate && scheduledTime ? new Date(`${scheduledDate}T${scheduledTime}`) : undefined,
+      isScheduled: isSchedulingMode && (!!scheduledDate && !!scheduledTime),
+      scheduledFor: (isSchedulingMode && scheduledDate && scheduledTime) ? new Date(`${scheduledDate}T${scheduledTime}`) : undefined,
       tenantId: tenantId || '', // ✅ CRÍTICO: Sempre enviar (vazio ou não - useOrdersStore trata fallback)
     }, shouldAutoPrint);
     
@@ -1360,10 +1360,12 @@ export function CheckoutModal() {
     setCouponDiscount(0);
     setAppliedCoupon('');
     setCouponValidationMessage('');
+    setSchedulingMode(false);
     setCheckoutOpen(false);
   };
 
   const handleBackToCart = () => {
+    setSchedulingMode(false);
     setCheckoutOpen(false);
     setCartOpen(true);
   };
@@ -2184,11 +2186,14 @@ export function CheckoutModal() {
                   </div>
                   
                   <h3 className="font-display text-2xl font-bold mb-2">
-                    Pedido Confirmado!
+                    {lastOrderPayload?.isScheduled ? 'Pedido Agendado! 🗓️' : 'Pedido Confirmado!'}
                   </h3>
                   
                   <p className="text-muted-foreground mb-6">
-                    Seu pedido foi recebido com sucesso.
+                    {lastOrderPayload?.isScheduled 
+                      ? `Seu pedido foi agendado para ${lastOrderPayload.delivery?.scheduledFor ? new Date(lastOrderPayload.delivery.scheduledFor).toLocaleDateString('pt-BR') : 'em breve'}.`
+                      : 'Seu pedido foi recebido com sucesso.'
+                    }
                     <br />
                     Você receberá atualizações pelo WhatsApp.
                   </p>
@@ -2198,6 +2203,11 @@ export function CheckoutModal() {
                       <p><span className="text-muted-foreground">Cliente:</span> {customer.name}</p>
                       <p><span className="text-muted-foreground">Telefone:</span> {customer.phone}</p>
                       <p><span className="text-muted-foreground">Entrega:</span> {deliveryType === 'delivery' ? 'Em domicílio' : 'Retirada'}</p>
+                      {lastOrderPayload?.isScheduled && lastOrderPayload.delivery?.scheduledFor && (
+                        <p className="text-primary font-medium">
+                          📅 Agendado para: {new Date(lastOrderPayload.delivery.scheduledFor).toLocaleString('pt-BR')}
+                        </p>
+                      )}
                       <p><span className="text-muted-foreground">Pagamento:</span> {getPaymentMethodLabel()}</p>
                       {lastPointsDiscount > 0 && (
                         <p className="text-green-600 font-medium">Desconto (Pontos): -{formatPrice(lastPointsDiscount)}</p>
