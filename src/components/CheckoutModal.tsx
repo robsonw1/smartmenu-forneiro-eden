@@ -62,6 +62,40 @@ interface PixData {
   expirationDate: string;
 }
 
+// 🎯 Função CENTRALIZADA para calcular steps visíveis
+const getVisibleSteps = (deliveryType: string, isSchedulingMode: boolean, enableScheduling: boolean): Step[] => {
+  // 1️⃣ Se scheduling não está habilitado nas settings, NUNCA mostrar
+  if (!enableScheduling) {
+    let steps: Step[] = ['contact', 'delivery', 'address', 'payment'];
+    if (deliveryType === 'pickup') {
+      steps = ['contact', 'delivery', 'payment'];
+    }
+    return steps;
+  }
+
+  // 2️⃣ Se scheduling está habilitado, mostrar APENAS se isSchedulingMode=true
+  let steps: Step[] = ['contact', 'delivery', 'address', 'payment'];
+  if (deliveryType === 'pickup') {
+    steps = ['contact', 'delivery', 'payment'];
+  }
+
+  // Insira 'scheduling' antes de 'payment' apenas se em modo de agendamento
+  if (isSchedulingMode) {
+    const paymentIndex = steps.indexOf('payment');
+    steps.splice(paymentIndex, 0, 'scheduling');
+  }
+  
+  console.log('📋 [VISIBLE_STEPS] calculados:', {
+    steps,
+    deliveryType,
+    isSchedulingMode,
+    enableScheduling,
+    stepsCount: steps.length,
+  });
+  
+  return steps;
+};
+
 export function CheckoutModal() {
   const { isCheckoutOpen, setCheckoutOpen, setCartOpen, isSchedulingMode, setSchedulingMode } = useUIStore();
   const { items, getSubtotal, clearCart } = useCartStore();
@@ -505,9 +539,9 @@ export function CheckoutModal() {
         }
         return true;
       case 'scheduling':
-        // Skip validation if scheduling is disabled
-        if (!settings.enableScheduling) return true;
-        // Validate scheduling fields
+        // Se scheduling não está habilitado E não estamos em modo de agendamento, pular validação
+        if (!settings.enableScheduling || !isSchedulingMode) return true;
+        // Validar campos de agendamento se chegou aqui
         if (!scheduledDate || !scheduledTime) {
           toast.error('Por favor, selecione a data e hora do agendamento');
           return false;
@@ -532,47 +566,37 @@ export function CheckoutModal() {
   };
 
   const nextStep = () => {
-    const baseSteps: Step[] = ['contact', 'delivery', 'address', 'scheduling', 'payment'];
-    
-    // Skip address step if pickup
-    let steps = baseSteps;
-    if (deliveryType === 'pickup') {
-      steps = ['contact', 'delivery', 'scheduling', 'payment'];
-    }
-
-    // Skip scheduling step ONLY if: NOT in scheduling mode AND settings don't enable it
-    // In other words: show scheduling if EITHER isSchedulingMode=true OR settings.enableScheduling=true
-    if (!isSchedulingMode && !settings.enableScheduling) {
-      steps = steps.filter(s => s !== 'scheduling');
-    }
-    
+    const steps = getVisibleSteps(deliveryType, isSchedulingMode, settings.enableScheduling);
     const currentIndex = steps.indexOf(step as any);
     
-    if (!validateStep(step)) return;
+    console.log('➡️ [NEXT] currentIndex:', currentIndex, 'totalSteps:', steps.length, 'steps:', steps);
+    
+    if (!validateStep(step)) {
+      console.log('❌ [NEXT] Validação falhou');
+      return;
+    }
     
     if (currentIndex < steps.length - 1) {
-      setStep(steps[currentIndex + 1]);
+      const nextStep = steps[currentIndex + 1];
+      console.log('✅ [NEXT] Indo para:', nextStep);
+      setStep(nextStep);
+    } else {
+      console.log('⚠️ [NEXT] Já no último passo');
     }
   };
 
   const prevStep = () => {
-    const baseSteps: Step[] = ['contact', 'delivery', 'address', 'scheduling', 'payment'];
-    
-    // Skip address step if pickup
-    let steps = baseSteps;
-    if (deliveryType === 'pickup') {
-      steps = ['contact', 'delivery', 'scheduling', 'payment'];
-    }
-
-    // Skip scheduling step ONLY if: NOT in scheduling mode AND settings don't enable it
-    // In other words: show scheduling if EITHER isSchedulingMode=true OR settings.enableScheduling=true
-    if (!isSchedulingMode && !settings.enableScheduling) {
-      steps = steps.filter(s => s !== 'scheduling');
-    }
-    
+    const steps = getVisibleSteps(deliveryType, isSchedulingMode, settings.enableScheduling);
     const currentIndex = steps.indexOf(step as any);
+    
+    console.log('⬅️ [PREV] currentIndex:', currentIndex, 'steps:', steps);
+    
     if (currentIndex > 0) {
-      setStep(steps[currentIndex - 1]);
+      const prevStep = steps[currentIndex - 1];
+      console.log('✅ [PREV] Voltando para:', prevStep);
+      setStep(prevStep);
+    } else {
+      console.log('⚠️ [PREV] Já no primeiro passo');
     }
   };
 
@@ -1382,6 +1406,7 @@ export function CheckoutModal() {
   };
 
   const storeOpen = isStoreOpen();
+  const visibleSteps = getVisibleSteps(deliveryType, isSchedulingMode, settings.enableScheduling);
 
   return (
     <>
@@ -1414,27 +1439,31 @@ export function CheckoutModal() {
             {/* Progress Steps */}
             {!['confirmation', 'pix'].includes(step) && (
               <div className="flex items-center justify-between mt-6 mb-8">
-                {['contact', 'delivery', 'address', 'payment'].map((s, i) => (
-                  <div key={s} className="flex items-center">
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium
-                        ${step === s || ['contact', 'delivery', 'address', 'payment'].indexOf(step as any) > i
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-secondary text-muted-foreground'
-                        }`}
-                    >
-                      {i + 1}
+                {visibleSteps.filter(s => s !== 'payment').map((s, i) => {
+                  const displaySteps = visibleSteps.filter(s => s !== 'payment');
+                  const currentStepIndex = displaySteps.indexOf(step as any);
+                  return (
+                    <div key={s} className="flex items-center">
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium
+                          ${step === s || currentStepIndex > i
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-secondary text-muted-foreground'
+                          }`}
+                      >
+                        {i + 1}
+                      </div>
+                      {i < displaySteps.length - 1 && (
+                        <div className={`w-8 md:w-16 h-1 mx-1 rounded
+                          ${currentStepIndex > i
+                            ? 'bg-primary'
+                            : 'bg-secondary'
+                          }`}
+                        />
+                      )}
                     </div>
-                    {i < 3 && (
-                      <div className={`w-8 md:w-16 h-1 mx-1 rounded
-                        ${['contact', 'delivery', 'address', 'payment'].indexOf(step as any) > i
-                          ? 'bg-primary'
-                          : 'bg-secondary'
-                        }`}
-                      />
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
