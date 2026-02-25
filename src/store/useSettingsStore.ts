@@ -35,6 +35,10 @@ interface StoreSettings {
   auto_print_cash?: boolean;
   orderAlertEnabled?: boolean; // Ativar/desativar som de alerta para novos pedidos
   sendOrderSummaryToWhatsApp?: boolean; // Ativar/desativar envio de resumo para WhatsApp
+  enableScheduling?: boolean; // Ativar/desativar agendamento de pedidos
+  minScheduleMinutes?: number; // Mínimo de minutos que cliente precisa esperar
+  maxScheduleDays?: number; // Máximo de dias que pode agendar
+  allowSchedulingOnClosedDays?: boolean; // Permite agendar em dias que loja está fechada
 }
 
 interface SettingsStore {
@@ -78,6 +82,10 @@ const defaultSettings: StoreSettings = {
   adminPassword: 'admin123',
   orderAlertEnabled: true,
   sendOrderSummaryToWhatsApp: false,
+  enableScheduling: false,
+  minScheduleMinutes: 30,
+  maxScheduleDays: 7,
+  allowSchedulingOnClosedDays: false,
 };
 
 const dayNames: (keyof WeekSchedule)[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -120,6 +128,10 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
           auto_print_pix: currentSettings.auto_print_pix || false,
           auto_print_card: currentSettings.auto_print_card || false,
           auto_print_cash: currentSettings.auto_print_cash || false,
+          enable_scheduling: currentSettings.enableScheduling ?? false,
+          min_schedule_minutes: currentSettings.minScheduleMinutes ?? 30,
+          max_schedule_days: currentSettings.maxScheduleDays ?? 7,
+          allow_scheduling_on_closed_days: currentSettings.allowSchedulingOnClosedDays ?? false,
           updated_at: new Date().toISOString(),
         })
         .eq('id', 'store-settings');
@@ -241,6 +253,10 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
           auto_print_pix: settings.auto_print_pix || false,
           auto_print_card: settings.auto_print_card || false,
           auto_print_cash: settings.auto_print_cash || false,
+          enable_scheduling: settings.enableScheduling ?? false,
+          min_schedule_minutes: settings.minScheduleMinutes ?? 30,
+          max_schedule_days: settings.maxScheduleDays ?? 7,
+          allow_scheduling_on_closed_days: settings.allowSchedulingOnClosedDays ?? false,
           updated_at: new Date().toISOString(),
         })
         .eq('id', 'store-settings');
