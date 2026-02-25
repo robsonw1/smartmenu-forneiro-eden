@@ -50,6 +50,7 @@ interface SettingsStore {
   changePassword: (currentPassword: string, newPassword: string) => { success: boolean; message: string };
   isStoreOpen: () => boolean;
   syncSettingsToSupabase: () => Promise<{ success: boolean; message: string }>;
+  loadSettingsFromSupabase: () => Promise<void>;
 }
 
 const defaultDaySchedule: DaySchedule = {
@@ -273,6 +274,56 @@ export const useSettingsStore = create<SettingsStore>()(
     } catch (error) {
       console.error('❌ Erro ao sincronizar settings:', error);
       return { success: false, message: 'Erro ao sincronizar configurações' };
+    }
+  },
+
+  loadSettingsFromSupabase: async () => {
+    try {
+      const { data, error } = await supabase
+        .from('settings')
+        .select('*')
+        .eq('id', 'store-settings')
+        .single();
+
+      if (error) {
+        console.error('❌ Erro ao carregar settings do Supabase:', error);
+        return;
+      }
+
+      if (data) {
+        // Extrair do campo 'value' (JSON) e dos campos diretos
+        const value = (data as any).value || {};
+        
+        const newSettings: Partial<StoreSettings> = {
+          name: value.name || 'Forneiro Éden',
+          phone: value.phone || '(11) 99999-9999',
+          address: value.address || 'Rua das Pizzas, 123 - Centro',
+          slogan: value.slogan || 'A Pizza mais recheada da cidade 🇮🇹',
+          schedule: value.schedule || defaultWeekSchedule,
+          isManuallyOpen: value.isManuallyOpen !== undefined ? value.isManuallyOpen : true,
+          deliveryTimeMin: value.deliveryTimeMin || 60,
+          deliveryTimeMax: value.deliveryTimeMax || 70,
+          pickupTimeMin: value.pickupTimeMin || 40,
+          pickupTimeMax: value.pickupTimeMax || 50,
+          adminPassword: value.adminPassword || 'admin123',
+          orderAlertEnabled: value.orderAlertEnabled !== undefined ? value.orderAlertEnabled : true,
+          sendOrderSummaryToWhatsApp: value.sendOrderSummaryToWhatsApp !== undefined ? value.sendOrderSummaryToWhatsApp : false,
+          printnode_printer_id: (data as any).printnode_printer_id,
+          print_mode: (data as any).print_mode || 'auto',
+          auto_print_pix: (data as any).auto_print_pix ?? false,
+          auto_print_card: (data as any).auto_print_card ?? false,
+          auto_print_cash: (data as any).auto_print_cash ?? false,
+          enableScheduling: (data as any).enable_scheduling ?? false,
+          minScheduleMinutes: (data as any).min_schedule_minutes ?? 30,
+          maxScheduleDays: (data as any).max_schedule_days ?? 7,
+          allowSchedulingOnClosedDays: (data as any).allow_scheduling_on_closed_days ?? false,
+        };
+
+        set({ settings: { ...get().settings, ...newSettings } });
+        console.log('✅ Settings carregadas do Supabase:', newSettings);
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar settings:', error);
     }
   },
     }),
