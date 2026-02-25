@@ -131,11 +131,27 @@ export const useOrdersStore = create<OrdersStore>()(
               needs_change: newOrder.needsChange || false,
               is_scheduled: newOrder.isScheduled || false,
               scheduled_for: (() => {
-                if (!newOrder.scheduledFor) return null;
-                if (typeof newOrder.scheduledFor === 'string') return newOrder.scheduledFor;
-                if (newOrder.scheduledFor instanceof Date && typeof newOrder.scheduledFor.toISOString === 'function') {
-                  return newOrder.scheduledFor.toISOString();
+                console.log('🔍 [DEBUG] scheduledFor type:', {
+                  value: newOrder.scheduledFor,
+                  type: typeof newOrder.scheduledFor,
+                  isDate: newOrder.scheduledFor instanceof Date,
+                  hasToISOString: newOrder.scheduledFor && typeof (newOrder.scheduledFor as any).toISOString === 'function'
+                });
+                if (!newOrder.scheduledFor) {
+                  console.log('✅ [DEBUG] scheduledFor is null/undefined, returning null');
+                  return null;
                 }
+                if (typeof newOrder.scheduledFor === 'string') {
+                  console.log('✅ [DEBUG] scheduledFor is string, returning as-is:', newOrder.scheduledFor);
+                  return newOrder.scheduledFor;
+                }
+                if (newOrder.scheduledFor instanceof Date) {
+                  const dateObj = newOrder.scheduledFor as Date;
+                  const isoString = dateObj.toISOString();
+                  console.log('✅ [DEBUG] scheduledFor is Date, returning ISO:', isoString);
+                  return isoString;
+                }
+                console.log('⚠️ [DEBUG] scheduledFor is unknown type, returning null');
                 return null;  // Fallback for any other type
               })(),
               created_at: localISO,
