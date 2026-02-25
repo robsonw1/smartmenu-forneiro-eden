@@ -59,10 +59,12 @@ interface CheckoutStore {
 interface UIStore {
   isCartOpen: boolean;
   isCheckoutOpen: boolean;
+  isSchedulingMode: boolean;
   selectedProduct: Product | null;
   isProductModalOpen: boolean;
   setCartOpen: (open: boolean) => void;
   setCheckoutOpen: (open: boolean) => void;
+  setSchedulingMode: (mode: boolean) => void;
   setSelectedProduct: (product: Product | null) => void;
   setProductModalOpen: (open: boolean) => void;
 }
@@ -203,11 +205,13 @@ export const useCheckoutStore = create<CheckoutStore>((set, get) => ({
 export const useUIStore = create<UIStore>((set) => ({
   isCartOpen: false,
   isCheckoutOpen: false,
+  isSchedulingMode: false,
   selectedProduct: null,
   isProductModalOpen: false,
 
   setCartOpen: (open) => set({ isCartOpen: open }),
   setCheckoutOpen: (open) => set({ isCheckoutOpen: open }),
+  setSchedulingMode: (mode) => set({ isSchedulingMode: mode }),
   setSelectedProduct: (product) => set({ selectedProduct: product }),
   setProductModalOpen: (open) => set({ isProductModalOpen: open }),
 }));
