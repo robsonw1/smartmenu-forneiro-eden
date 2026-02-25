@@ -130,11 +130,14 @@ export const useOrdersStore = create<OrdersStore>()(
               observations: newOrder.observations,
               needs_change: newOrder.needsChange || false,
               is_scheduled: newOrder.isScheduled || false,
-              scheduled_for: newOrder.scheduledFor 
-                ? (typeof newOrder.scheduledFor === 'string' 
-                    ? newOrder.scheduledFor 
-                    : newOrder.scheduledFor.toISOString())
-                : null,
+              scheduled_for: (() => {
+                if (!newOrder.scheduledFor) return null;
+                if (typeof newOrder.scheduledFor === 'string') return newOrder.scheduledFor;
+                if (newOrder.scheduledFor instanceof Date && typeof newOrder.scheduledFor.toISOString === 'function') {
+                  return newOrder.scheduledFor.toISOString();
+                }
+                return null;  // Fallback for any other type
+              })(),
               created_at: localISO,
               address: addressWithMetadata,
               tenant_id: finalTenantId, // ✅ CRÍTICO: Sempre com fallback
