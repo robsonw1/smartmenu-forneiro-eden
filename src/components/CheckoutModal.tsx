@@ -540,8 +540,9 @@ export function CheckoutModal() {
       steps = ['contact', 'delivery', 'scheduling', 'payment'];
     }
 
-    // If scheduling is NOT enabled OR we're not in scheduling mode, skip scheduling step
-    if (!settings.enableScheduling || !isSchedulingMode) {
+    // Skip scheduling step ONLY if: NOT in scheduling mode AND settings don't enable it
+    // In other words: show scheduling if EITHER isSchedulingMode=true OR settings.enableScheduling=true
+    if (!isSchedulingMode && !settings.enableScheduling) {
       steps = steps.filter(s => s !== 'scheduling');
     }
     
@@ -563,8 +564,9 @@ export function CheckoutModal() {
       steps = ['contact', 'delivery', 'scheduling', 'payment'];
     }
 
-    // If scheduling is NOT enabled OR we're not in scheduling mode, skip scheduling step
-    if (!settings.enableScheduling || !isSchedulingMode) {
+    // Skip scheduling step ONLY if: NOT in scheduling mode AND settings don't enable it
+    // In other words: show scheduling if EITHER isSchedulingMode=true OR settings.enableScheduling=true
+    if (!isSchedulingMode && !settings.enableScheduling) {
       steps = steps.filter(s => s !== 'scheduling');
     }
     
