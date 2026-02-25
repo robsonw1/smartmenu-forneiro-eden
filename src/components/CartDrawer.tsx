@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import pizzaImage from '@/assets/pizza-hero.jpg';
 
 export function CartDrawer() {
-  const { isCartOpen, setCartOpen, setCheckoutOpen } = useUIStore();
+  const { isCartOpen, setCartOpen, setCheckoutOpen, setSchedulingMode } = useUIStore();
   const { items, removeItem, updateQuantity, getSubtotal, clearCart } = useCartStore();
 
   const formatPrice = (price: number) => {
@@ -23,6 +23,13 @@ export function CartDrawer() {
   };
 
   const handleCheckout = () => {
+    setSchedulingMode(false);
+    setCartOpen(false);
+    setCheckoutOpen(true);
+  };
+
+  const handleScheduledOrder = () => {
+    setSchedulingMode(true);
     setCartOpen(false);
     setCheckoutOpen(true);
   };
@@ -202,7 +209,7 @@ export function CartDrawer() {
             </ScrollArea>
 
             {/* Footer */}
-            <div className="border-t pt-4 space-y-4">
+            <div className="border-t pt-4 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Subtotal</span>
                 <span className="font-semibold">{formatPrice(subtotal)}</span>
@@ -218,6 +225,16 @@ export function CartDrawer() {
                 onClick={handleCheckout}
               >
                 Finalizar pedido
+                <ArrowRight className="w-5 h-5" />
+              </Button>
+
+              <Button 
+                className="w-full btn-cta gap-2" 
+                size="lg"
+                onClick={handleScheduledOrder}
+                variant="outline"
+              >
+                🗓️ Agendar pedido
                 <ArrowRight className="w-5 h-5" />
               </Button>
 
