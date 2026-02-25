@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -34,8 +33,6 @@ import { format, startOfDay, endOfDay, subDays, isWithinInterval } from 'date-fn
 import { ptBR } from 'date-fns/locale';
 import { TrendingUp, Download, DollarSign, ShoppingBag, Users, TrendingDown } from 'lucide-react';
 
-const COLORS = ['#FF8C42', '#FFB84D', '#FFD93D', '#6BCB77', '#4D96FF', '#9D84B7', '#FF6B6B', '#FFE66D', '#95E1D3', '#F38181'];
-
 interface DateRangeState {
   startDate: string;
   endDate: string;
@@ -44,6 +41,30 @@ interface DateRangeState {
 export function AnalyticsPanel() {
   const orders = useOrdersStore((s) => s.orders);
   const productsById = useCatalogStore((s) => s.productsById);
+
+  // Formatar moeda com separador de milhares
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(price);
+  };
+
+  // Cores específicas para cada método de pagamento
+  const getPaymentMethodColor = (method: string) => {
+    switch (method) {
+      case 'PIX':
+        return '#4D96FF'; // Azul
+      case 'Cartão':
+        return '#FF8C42'; // Laranja
+      case 'Dinheiro':
+        return '#6BCB77'; // Verde
+      default:
+        return '#9D84B7';
+    }
+  };
 
   const [dateRange, setDateRange] = useState<DateRangeState>({
     startDate: format(subDays(new Date(), 30), 'yyyy-MM-dd'),
@@ -300,7 +321,7 @@ export function AnalyticsPanel() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">R$ {salesMetrics.totalSales.toFixed(2)}</div>
+            <div className="text-2xl font-bold">{formatPrice(salesMetrics.totalSales)}</div>
             <p className="text-xs text-muted-foreground mt-1">
               {salesMetrics.growth >= 0 ? (
                 <span className="text-green-500 flex items-center gap-1">
@@ -335,7 +356,7 @@ export function AnalyticsPanel() {
             <CardTitle className="text-sm font-medium">Ticket Médio</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">R$ {salesMetrics.avgTicket.toFixed(2)}</div>
+            <div className="text-2xl font-bold">{formatPrice(salesMetrics.avgTicket)}</div>
             <p className="text-xs text-muted-foreground mt-1">por pedido</p>
           </CardContent>
         </Card>
@@ -369,7 +390,7 @@ export function AnalyticsPanel() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="day" />
                 <YAxis />
-                <Tooltip formatter={(value: any) => `R$ ${Number(value).toFixed(2)}`} />
+                <Tooltip formatter={(value: any) => formatPrice(Number(value))} />
                 <Line type="monotone" dataKey="value" stroke="#FF8C42" strokeWidth={2} />
               </LineChart>
             </ResponsiveContainer>
@@ -385,20 +406,20 @@ export function AnalyticsPanel() {
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie data={paymentMethods} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
-                  {paymentMethods.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  {paymentMethods.map((entry) => (
+                    <Cell key={`cell-${entry.name}`} fill={getPaymentMethodColor(entry.name)} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value: any) => `R$ ${Number(value).toFixed(2)}`} />
+                <Tooltip formatter={(value: any) => formatPrice(Number(value))} />
               </PieChart>
             </ResponsiveContainer>
             <div className="mt-4 space-y-2">
-              {paymentMethods.map((m, i) => (
-                <div key={i} className="flex items-center justify-between text-sm">
+              {paymentMethods.map((m) => (
+                <div key={m.name} className="flex items-center justify-between text-sm">
                   <span className="flex items-center gap-2">
                     <div
                       className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: COLORS[i % COLORS.length] }}
+                      style={{ backgroundColor: getPaymentMethodColor(m.name) }}
                     />
                     {m.name}
                   </span>
@@ -420,12 +441,12 @@ export function AnalyticsPanel() {
             <div>
               <p className="text-sm text-muted-foreground mb-2">Entregas</p>
               <p className="text-2xl font-bold">{operational.delivery.count}</p>
-              <p className="text-xs text-muted-foreground">R$ {operational.delivery.value.toFixed(2)}</p>
+              <p className="text-xs text-muted-foreground">{formatPrice(operational.delivery.value)}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground mb-2">Retiradas</p>
               <p className="text-2xl font-bold">{operational.pickup.count}</p>
-              <p className="text-xs text-muted-foreground">R$ {operational.pickup.value.toFixed(2)}</p>
+              <p className="text-xs text-muted-foreground">{formatPrice(operational.pickup.value)}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground mb-2">Taxa de Entrega</p>
@@ -455,7 +476,7 @@ export function AnalyticsPanel() {
                   <TableRow key={i}>
                     <TableCell>{product.name}</TableCell>
                     <TableCell className="text-right font-medium">{product.quantity}</TableCell>
-                    <TableCell className="text-right">R$ {product.revenue.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{formatPrice(product.revenue)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -486,7 +507,7 @@ export function AnalyticsPanel() {
                     <TableCell className="font-medium">{customer.name}</TableCell>
                     <TableCell className="text-sm">{customer.email}</TableCell>
                     <TableCell className="text-right">{customer.orders}</TableCell>
-                    <TableCell className="text-right font-medium">R$ {customer.totalSpent.toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-medium">{formatPrice(customer.totalSpent)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
