@@ -37,6 +37,8 @@ interface CheckoutStore {
   changeAmount: string;
   saveAsDefault: boolean;
   pointsToRedeem: number;
+  scheduledDate: string | null;
+  scheduledTime: string | null;
   setCustomer: (customer: Partial<CheckoutStore['customer']>) => void;
   setAddress: (address: Partial<CheckoutStore['address']>) => void;
   setDeliveryType: (type: 'delivery' | 'pickup') => void;
@@ -47,6 +49,8 @@ interface CheckoutStore {
   setChangeAmount: (amount: string) => void;
   setSaveAsDefault: (save: boolean) => void;
   setPointsToRedeem: (points: number) => void;
+  setScheduledDate: (date: string | null) => void;
+  setScheduledTime: (time: string | null) => void;
   calculatePointsDiscount: () => number;
   getDeliveryFee: () => number;
   reset: () => void;
@@ -126,6 +130,8 @@ export const useCheckoutStore = create<CheckoutStore>((set, get) => ({
   changeAmount: '',
   saveAsDefault: false,
   pointsToRedeem: 0,
+  scheduledDate: null,
+  scheduledTime: null,
 
   setCustomer: (customer) => set((state) => ({
     customer: { ...state.customer, ...customer }
@@ -153,6 +159,10 @@ export const useCheckoutStore = create<CheckoutStore>((set, get) => ({
   setSaveAsDefault: (save) => set({ saveAsDefault: save }),
   
   setPointsToRedeem: (points) => set({ pointsToRedeem: Math.max(0, points) }),
+
+  setScheduledDate: (date) => set({ scheduledDate: date }),
+
+  setScheduledTime: (time) => set({ scheduledTime: time }),
   
   calculatePointsDiscount: () => {
     const points = get().pointsToRedeem;
@@ -185,6 +195,8 @@ export const useCheckoutStore = create<CheckoutStore>((set, get) => ({
     changeAmount: '',
     saveAsDefault: false,
     pointsToRedeem: 0,
+    scheduledDate: null,
+    scheduledTime: null,
   }),
 }));
 
