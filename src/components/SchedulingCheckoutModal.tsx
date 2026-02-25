@@ -1322,7 +1322,13 @@ export function SchedulingCheckoutModal() {
   const handleClose = () => {
     if (step === 'confirmation') {
       clearCart();
+      // ✅ NOT resetando scheduledDate/scheduledTime - preservar para próximo agendamento
       reset();
+      // ✅ Limpar schedule após confirmação
+      setScheduledDate('');
+      setScheduledTime('');
+    } else {
+      // Se cancelar no meio, preserve os dados de agendamento
     }
     setStep('contact');
     setPixData(null);
@@ -1691,7 +1697,7 @@ export function SchedulingCheckoutModal() {
                   </h3>
 
                   <div className="space-y-4">
-                    {/* Date Input */}
+                    {/* Date Input - Custom formato DD/MM (sem ano) */}
                     <div>
                       <Label htmlFor="scheduled-date" className="text-sm font-medium">
                         Data de Entrega/Retirada (DD/MM)
@@ -1700,11 +1706,18 @@ export function SchedulingCheckoutModal() {
                         id="scheduled-date"
                         type="date"
                         value={scheduledDate}
-                        onChange={(e) => setScheduledDate(e.target.value)}
+                        onChange={(e) => {
+                          // Armazenar em formato YYYY-MM-DD
+                          setScheduledDate(e.target.value);
+                        }}
                         min={minDate}
                         max={maxDate}
+                        placeholder="25/02"
                         className="mt-1"
                       />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {scheduledDate && `Selecionado: ${new Date(`${scheduledDate}T00:00`).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}`}
+                      </p>
                     </div>
 
                     {/* Time Input */}
@@ -1717,8 +1730,12 @@ export function SchedulingCheckoutModal() {
                         type="time"
                         value={scheduledTime}
                         onChange={(e) => setScheduledTime(e.target.value)}
+                        placeholder="19:30"
                         className="mt-1"
                       />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {scheduledTime && `Horário: ${scheduledTime}`}
+                      </p>
                     </div>
 
                     {/* Summary */}
