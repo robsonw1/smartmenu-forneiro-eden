@@ -3,6 +3,7 @@ import { ProductCatalog } from '@/components/ProductCatalog';
 import { ProductModal } from '@/components/ProductModal';
 import { CartDrawer } from '@/components/CartDrawer';
 import { CheckoutModal } from '@/components/CheckoutModal';
+import { SchedulingCheckoutModal } from '@/components/SchedulingCheckoutModal';
 import { Footer } from '@/components/Footer';
 import { CustomerLoginModal } from '@/components/CustomerLoginModal';
 import { useLoyaltyStore } from '@/store/useLoyaltyStore';
@@ -52,6 +53,7 @@ const Index = () => {
       <ProductModal />
       <CartDrawer />
       <CheckoutModal />
+      <SchedulingCheckoutModal />
     </div>
   );
 };
