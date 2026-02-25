@@ -252,12 +252,12 @@ export function SchedulingCheckoutModal() {
     }
   }, [isSchedulingCheckoutOpen, currentCustomer?.street]);
 
-  // Resetar pontos a resgatar quando checkout abre
+  // Resetar pontos a resgatar APENAS quando checkout fecha
   useEffect(() => {
-    if (isSchedulingCheckoutOpen) {
+    if (!isSchedulingCheckoutOpen && step !== 'contact') {
       setPointsToRedeem(0);
     }
-  }, [isSchedulingCheckoutOpen]);
+  }, [isSchedulingCheckoutOpen, step]);
 
   // ✅ FORCE SETTINGS REFRESH: Usar Zustand subscribe para detectar mudanças
   // ✅ FORCE SETTINGS REFRESH: Re-fetch settings do Supabase quando checkout abre
@@ -1322,14 +1322,12 @@ export function SchedulingCheckoutModal() {
   const handleClose = () => {
     if (step === 'confirmation') {
       clearCart();
-      // ✅ NOT resetando scheduledDate/scheduledTime - preservar para próximo agendamento
-      reset();
-      // ✅ Limpar schedule após confirmação
+      // ✅ Limpar agendamento APENAS após confirmar pedido
       setScheduledDate('');
       setScheduledTime('');
-    } else {
-      // Se cancelar no meio, preserve os dados de agendamento
+      reset();
     }
+    // ❌ NÃO resetar scheduledDate/scheduledTime se apenas cancelar
     setStep('contact');
     setPixData(null);
     setCopied(false);
@@ -1697,27 +1695,25 @@ export function SchedulingCheckoutModal() {
                   </h3>
 
                   <div className="space-y-4">
-                    {/* Date Input - Custom formato DD/MM (sem ano) */}
+                    {/* Date Input - Simples, sem visualização de ano */}
                     <div>
                       <Label htmlFor="scheduled-date" className="text-sm font-medium">
-                        Data de Entrega/Retirada (DD/MM)
+                        Data de Entrega/Retirada
                       </Label>
                       <Input
                         id="scheduled-date"
                         type="date"
                         value={scheduledDate}
-                        onChange={(e) => {
-                          // Armazenar em formato YYYY-MM-DD
-                          setScheduledDate(e.target.value);
-                        }}
+                        onChange={(e) => setScheduledDate(e.target.value)}
                         min={minDate}
                         max={maxDate}
-                        placeholder="25/02"
                         className="mt-1"
                       />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {scheduledDate && `Selecionado: ${new Date(`${scheduledDate}T00:00`).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}`}
-                      </p>
+                      {scheduledDate && (
+                        <div className="mt-2 p-2 bg-primary/10 rounded text-sm font-medium text-primary">
+                          📅 {new Date(`${scheduledDate}T00:00`).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })}
+                        </div>
+                      )}
                     </div>
 
                     {/* Time Input */}
@@ -1730,12 +1726,13 @@ export function SchedulingCheckoutModal() {
                         type="time"
                         value={scheduledTime}
                         onChange={(e) => setScheduledTime(e.target.value)}
-                        placeholder="19:30"
                         className="mt-1"
                       />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {scheduledTime && `Horário: ${scheduledTime}`}
-                      </p>
+                      {scheduledTime && (
+                        <div className="mt-2 p-2 bg-primary/10 rounded text-sm font-medium text-primary">
+                          🕐 {scheduledTime}
+                        </div>
+                      )}
                     </div>
 
                     {/* Summary */}
