@@ -1357,6 +1357,10 @@ export function SchedulingCheckoutModal() {
     }
   };
 
+  // 📅 Calcular datas de agendamento (mínima e máxima - ANTES do render para não resetar)
+  const minDate = new Date().toISOString().split('T')[0];
+  const maxDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
   const storeOpen = isStoreOpen();
   const visibleSteps = getVisibleSteps(deliveryType);
 
@@ -1690,14 +1694,15 @@ export function SchedulingCheckoutModal() {
                     {/* Date Input */}
                     <div>
                       <Label htmlFor="scheduled-date" className="text-sm font-medium">
-                        Data de Entrega/Retirada
+                        Data de Entrega/Retirada (DD/MM)
                       </Label>
                       <Input
                         id="scheduled-date"
                         type="date"
                         value={scheduledDate}
                         onChange={(e) => setScheduledDate(e.target.value)}
-                        min={new Date().toISOString().split('T')[0]}
+                        min={minDate}
+                        max={maxDate}
                         className="mt-1"
                       />
                     </div>
