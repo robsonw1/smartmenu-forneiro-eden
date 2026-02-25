@@ -122,14 +122,6 @@ export const useOrdersStore = create<OrdersStore>()(
             points_redeemed: pointsRedeemed,
             pending_points: pendingPoints,
             payment_method: newOrder.paymentMethod,
-            delivery_street: newOrder.address.street,
-            delivery_number: newOrder.address.number,
-            delivery_complement: newOrder.address.complement,
-            delivery_neighborhood: newOrder.address.neighborhood,
-            delivery_reference: newOrder.address.reference,
-            observations: newOrder.observations,
-            needs_change: newOrder.needsChange || false,
-            change_amount: newOrder.changeAmount,
             is_scheduled: newOrder.isScheduled || false,
             scheduled_for: (() => {
               if (!newOrder.scheduledFor) return null;
@@ -140,7 +132,6 @@ export const useOrdersStore = create<OrdersStore>()(
               return null;
             })(),
             created_at: localISO,
-            address: addressWithMetadata,
             tenant_id: finalTenantId,
           };
           
