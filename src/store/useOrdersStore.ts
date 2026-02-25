@@ -109,59 +109,53 @@ export const useOrdersStore = create<OrdersStore>()(
             rule: pointsRedeemed > 0 ? 'Cliente usou pontos - NÃO ganha novos' : 'Cliente não usou pontos - Ganha novos'
           });
           
-          const { error } = await supabase.from('orders').insert([
-            {
-              id: newOrder.id,
-              customer_name: newOrder.customer.name,
-              customer_phone: newOrder.customer.phone,
-              email: customerEmail, // ✅ Use trimmed email
-              delivery_fee: newOrder.deliveryFee,
-              status: newOrder.status,
-              total: newOrder.total,
-              points_discount: newOrder.pointsDiscount || 0,
-              points_redeemed: pointsRedeemed,
-              pending_points: pendingPoints, // ✅ Usar pending_points calculado
-              payment_method: newOrder.paymentMethod,
-              delivery_street: newOrder.address.street,
-              delivery_number: newOrder.address.number,
-              delivery_complement: newOrder.address.complement,
-              delivery_neighborhood: newOrder.address.neighborhood,
-              delivery_reference: newOrder.address.reference,
-              observations: newOrder.observations,
-              needs_change: newOrder.needsChange || false,
-              is_scheduled: newOrder.isScheduled || false,
-              scheduled_for: (() => {
-                console.log('🔍 [DEBUG] scheduledFor type:', {
-                  value: newOrder.scheduledFor,
-                  type: typeof newOrder.scheduledFor,
-                  isDate: newOrder.scheduledFor instanceof Date,
-                  hasToISOString: newOrder.scheduledFor && typeof (newOrder.scheduledFor as any).toISOString === 'function'
-                });
-                if (!newOrder.scheduledFor) {
-                  console.log('✅ [DEBUG] scheduledFor is null/undefined, returning null');
-                  return null;
-                }
-                if (typeof newOrder.scheduledFor === 'string') {
-                  console.log('✅ [DEBUG] scheduledFor is string, returning as-is:', newOrder.scheduledFor);
-                  return newOrder.scheduledFor;
-                }
-                if (newOrder.scheduledFor instanceof Date) {
-                  const dateObj = newOrder.scheduledFor as Date;
-                  const isoString = dateObj.toISOString();
-                  console.log('✅ [DEBUG] scheduledFor is Date, returning ISO:', isoString);
-                  return isoString;
-                }
-                console.log('⚠️ [DEBUG] scheduledFor is unknown type, returning null');
-                return null;  // Fallback for any other type
-              })(),
-              created_at: localISO,
-              address: addressWithMetadata,
-              tenant_id: finalTenantId, // ✅ CRÍTICO: Sempre com fallback
-            },
-          ] as any);
+          // 📋 LOGS PRE-INSERT: Mostrar todos os dados sendo enviados
+          const orderPayloadToInsert = {
+            id: newOrder.id,
+            customer_name: newOrder.customer.name,
+            customer_phone: newOrder.customer.phone,
+            email: customerEmail,
+            delivery_fee: newOrder.deliveryFee,
+            status: newOrder.status,
+            total: newOrder.total,
+            points_discount: newOrder.pointsDiscount || 0,
+            points_redeemed: pointsRedeemed,
+            pending_points: pendingPoints,
+            payment_method: newOrder.paymentMethod,
+            delivery_street: newOrder.address.street,
+            delivery_number: newOrder.address.number,
+            delivery_complement: newOrder.address.complement,
+            delivery_neighborhood: newOrder.address.neighborhood,
+            delivery_reference: newOrder.address.reference,
+            observations: newOrder.observations,
+            needs_change: newOrder.needsChange || false,
+            is_scheduled: newOrder.isScheduled || false,
+            scheduled_for: (() => {
+              if (!newOrder.scheduledFor) return null;
+              if (typeof newOrder.scheduledFor === 'string') return newOrder.scheduledFor;
+              if (newOrder.scheduledFor instanceof Date) {
+                return newOrder.scheduledFor.toISOString();
+              }
+              return null;
+            })(),
+            created_at: localISO,
+            address: addressWithMetadata,
+            tenant_id: finalTenantId,
+          };
+          
+          console.log('📋 [PRE-INSERT] Payload sendo enviado para Supabase:', orderPayloadToInsert);
+          
+          const { error } = await supabase.from('orders').insert([orderPayloadToInsert] as any);
 
           if (error) {
-            console.error('❌ Erro ao inserir order:', error);
+            console.error('❌ [ERRO-400] Detalhes completos do erro:', {
+              message: error.message,
+              code: error.code,
+              details: error.details,
+              hint: error.hint,
+              status: (error as any).status,
+              payload: orderPayloadToInsert,
+            });
             throw error;
           }
           console.log('✅ Order inserida com sucesso:', newOrder.id, 'em', localISO, 'com email:', customerEmail, 'pending_points:', pendingPoints, 'tenant_id:', finalTenantId);
