@@ -771,8 +771,8 @@ export function SchedulingCheckoutModal() {
       observations,
       needsChange: paymentMethod === 'cash' ? needsChange : false,
       changeAmount: paymentMethod === 'cash' && needsChange ? changeAmount : undefined,
-      isScheduled: false,
-      scheduledFor: undefined,
+      isScheduled: true,
+      scheduledFor: scheduledDate && scheduledTime ? `${scheduledDate}T${scheduledTime}:00` : undefined,
       tenantId: tenantId || '', // ✅ CRÍTICO: Sempre enviar (vazio ou não - useOrdersStore trata fallback)
     }, shouldAutoPrint);
     
