@@ -93,6 +93,8 @@ export interface Order {
   paymentId?: string;
   printedAt?: string;
   autoConfirmedByPix?: boolean; // Auto-confirmado via PIX
+  isScheduled?: boolean; // Indica se o pedido foi agendado
+  scheduledFor?: Date; // Data/hora do agendamento (ISO format)
 }
 
 // Available ingredients for "Moda do Cliente" pizza
