@@ -62,42 +62,17 @@ interface PixData {
   expirationDate: string;
 }
 
-// 🎯 Função CENTRALIZADA para calcular steps visíveis
-const getVisibleSteps = (deliveryType: string, isSchedulingMode: boolean, enableScheduling: boolean): Step[] => {
-  // 1️⃣ Se scheduling não está habilitado nas settings, NUNCA mostrar
-  if (!enableScheduling) {
-    let steps: Step[] = ['contact', 'delivery', 'address', 'payment'];
-    if (deliveryType === 'pickup') {
-      steps = ['contact', 'delivery', 'payment'];
-    }
-    return steps;
-  }
-
-  // 2️⃣ Se scheduling está habilitado, mostrar APENAS se isSchedulingMode=true
+// 4-step flow: contact, delivery, address, payment (no scheduling)
+const getVisibleSteps = (deliveryType: string): Step[] => {
   let steps: Step[] = ['contact', 'delivery', 'address', 'payment'];
   if (deliveryType === 'pickup') {
     steps = ['contact', 'delivery', 'payment'];
   }
-
-  // Insira 'scheduling' antes de 'payment' apenas se em modo de agendamento
-  if (isSchedulingMode) {
-    const paymentIndex = steps.indexOf('payment');
-    steps.splice(paymentIndex, 0, 'scheduling');
-  }
-  
-  console.log('📋 [VISIBLE_STEPS] calculados:', {
-    steps,
-    deliveryType,
-    isSchedulingMode,
-    enableScheduling,
-    stepsCount: steps.length,
-  });
-  
   return steps;
 };
 
 export function CheckoutModal() {
-  const { isCheckoutOpen, setCheckoutOpen, setCartOpen, isSchedulingMode, setSchedulingMode } = useUIStore();
+  const { isCheckoutOpen, setCheckoutOpen, setCartOpen } = useUIStore();
   const { items, getSubtotal, clearCart } = useCartStore();
   const {
     customer,
@@ -539,13 +514,6 @@ export function CheckoutModal() {
         }
         return true;
       case 'scheduling':
-        // Se scheduling não está habilitado E não estamos em modo de agendamento, pular validação
-        if (!settings.enableScheduling || !isSchedulingMode) return true;
-        // Validar campos de agendamento se chegou aqui
-        if (!scheduledDate || !scheduledTime) {
-          toast.error('Por favor, selecione a data e hora do agendamento');
-          return false;
-        }
         return true;
       case 'payment':
         // CPF é obrigatório APENAS para PIX
@@ -566,37 +534,19 @@ export function CheckoutModal() {
   };
 
   const nextStep = () => {
-    const steps = getVisibleSteps(deliveryType, isSchedulingMode, settings.enableScheduling);
+    const steps = getVisibleSteps(deliveryType);
     const currentIndex = steps.indexOf(step as any);
-    
-    console.log('➡️ [NEXT] currentIndex:', currentIndex, 'totalSteps:', steps.length, 'steps:', steps);
-    
-    if (!validateStep(step)) {
-      console.log('❌ [NEXT] Validação falhou');
-      return;
-    }
-    
+    if (!validateStep(step)) return;
     if (currentIndex < steps.length - 1) {
-      const nextStep = steps[currentIndex + 1];
-      console.log('✅ [NEXT] Indo para:', nextStep);
-      setStep(nextStep);
-    } else {
-      console.log('⚠️ [NEXT] Já no último passo');
+      setStep(steps[currentIndex + 1]);
     }
   };
 
   const prevStep = () => {
-    const steps = getVisibleSteps(deliveryType, isSchedulingMode, settings.enableScheduling);
+    const steps = getVisibleSteps(deliveryType);
     const currentIndex = steps.indexOf(step as any);
-    
-    console.log('⬅️ [PREV] currentIndex:', currentIndex, 'steps:', steps);
-    
     if (currentIndex > 0) {
-      const prevStep = steps[currentIndex - 1];
-      console.log('✅ [PREV] Voltando para:', prevStep);
-      setStep(prevStep);
-    } else {
-      console.log('⚠️ [PREV] Já no primeiro passo');
+      setStep(steps[currentIndex - 1]);
     }
   };
 
@@ -696,10 +646,8 @@ export function CheckoutModal() {
         estimatedTime: deliveryType === 'delivery' 
           ? `${settings.deliveryTimeMin}-${settings.deliveryTimeMax} min`
           : `${settings.pickupTimeMin}-${settings.pickupTimeMax} min`,
-        isScheduled: isSchedulingMode && (!!scheduledDate && !!scheduledTime),
-        scheduledFor: (isSchedulingMode && scheduledDate && scheduledTime)
-          ? new Date(`${scheduledDate}T${scheduledTime}`).toISOString()
-          : undefined,
+        isScheduled: false,
+        scheduledFor: undefined,
         ...(deliveryType === 'delivery' && {
           address: {
             street: address.street,
@@ -817,8 +765,8 @@ export function CheckoutModal() {
       observations,
       needsChange: paymentMethod === 'cash' ? needsChange : false,
       changeAmount: paymentMethod === 'cash' && needsChange ? changeAmount : undefined,
-      isScheduled: isSchedulingMode && (!!scheduledDate && !!scheduledTime),
-      scheduledFor: (isSchedulingMode && scheduledDate && scheduledTime) ? new Date(`${scheduledDate}T${scheduledTime}`) : undefined,
+      isScheduled: false,
+      scheduledFor: undefined,
       tenantId: tenantId || '', // ✅ CRÍTICO: Sempre enviar (vazio ou não - useOrdersStore trata fallback)
     }, shouldAutoPrint);
     
@@ -1386,12 +1334,10 @@ export function CheckoutModal() {
     setCouponDiscount(0);
     setAppliedCoupon('');
     setCouponValidationMessage('');
-    setSchedulingMode(false);
     setCheckoutOpen(false);
   };
 
   const handleBackToCart = () => {
-    setSchedulingMode(false);
     setCheckoutOpen(false);
     setCartOpen(true);
   };
@@ -1406,7 +1352,7 @@ export function CheckoutModal() {
   };
 
   const storeOpen = isStoreOpen();
-  const visibleSteps = getVisibleSteps(deliveryType, isSchedulingMode, settings.enableScheduling);
+  const visibleSteps = getVisibleSteps(deliveryType);
 
   return (
     <>
@@ -1715,74 +1661,6 @@ export function CheckoutModal() {
                           <Home className="w-4 h-4 text-primary" />
                         )}
                       </div>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Step: Scheduling (Agendamento) */}
-              {step === 'scheduling' && settings.enableScheduling && (
-                <motion.div
-                  key="scheduling"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="space-y-4"
-                >
-                  <h3 className="font-semibold flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-primary" />
-                    Agendar Pedido
-                  </h3>
-
-                  <p className="text-sm text-muted-foreground">
-                    Escolha a data e hora desejadas para receber seu pedido
-                  </p>
-
-                  <div className="space-y-3">
-                    {/* Date Selection */}
-                    <div>
-                      <Label htmlFor="scheduled-date">Data de Entrega/Retirada *</Label>
-                      <Input
-                        id="scheduled-date"
-                        type="date"
-                        value={scheduledDate || ''}
-                        onChange={(e) => setScheduledDate(e.target.value || null)}
-                        className="mt-1"
-                        min={new Date().toISOString().split('T')[0]}
-                        max={new Date(Date.now() + (settings.maxScheduleDays ?? 7) * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Mínimo {settings.minScheduleMinutes ?? 30} minutos de antecedência
-                      </p>
-                    </div>
-
-                    {/* Time Selection */}
-                    <div>
-                      <Label htmlFor="scheduled-time">Hora *</Label>
-                      <Input
-                        id="scheduled-time"
-                        type="time"
-                        value={scheduledTime || ''}
-                        onChange={(e) => setScheduledTime(e.target.value || null)}
-                        className="mt-1"
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Selecione um horário dentro do funcionamento
-                      </p>
-                    </div>
-
-                    {/* Info Alert */}
-                    {scheduledDate && (
-                      <Alert className="bg-blue-50 border-blue-200">
-                        <Clock className="h-4 w-4 text-blue-600" />
-                        <AlertDescription className="text-blue-900">
-                          Seu pedido será {deliveryType === 'delivery' ? 'entregue' : 'retirado'} em{' '}
-                          <span className="font-semibold">
-                            {new Date(scheduledDate).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' })}
-                            {scheduledTime && ` às ${scheduledTime}`}
-                          </span>
-                        </AlertDescription>
-                      </Alert>
                     )}
                   </div>
                 </motion.div>
