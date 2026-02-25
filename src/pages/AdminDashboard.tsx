@@ -160,10 +160,14 @@ const AdminDashboard = () => {
     }
   }, [navigate]);
 
-  // Sincronizar pedidos do Supabase quando o painel carrega
+  // Sincronizar "pedidos do Supabase quando o painel carrega
   useEffect(() => {
     const token = localStorage.getItem('admin-token');
     if (!token) return;
+
+    // Sincronizar settings imediatamente ao entrar no admin
+    console.log('📥 Carregando configurações do Supabase...');
+    useSettingsStore.getState().loadSettingsFromSupabase();
 
     // Sincronizar imediatamente
     console.log('📥 Sincronizando pedidos do Supabase...');
