@@ -1742,9 +1742,9 @@ export function SchedulingCheckoutModal() {
 
                     {/* Summary */}
                     {scheduledDate && scheduledTime && (
-                      <Alert className="bg-primary/5 border-primary/20">
+                      <Alert className="bg-primary/10 dark:bg-primary/20 border-primary/40 dark:border-primary/60 text-foreground dark:text-slate-100">
                         <Calendar className="h-4 w-4" />
-                        <AlertDescription>
+                        <AlertDescription className="text-foreground dark:text-slate-100">
                           Seu pedido será entregue/retirado em <strong>{new Date(`${scheduledDate}T${scheduledTime}`).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' })}</strong>
                         </AlertDescription>
                       </Alert>
