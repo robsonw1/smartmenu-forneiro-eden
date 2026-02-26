@@ -66,7 +66,7 @@ import { OrderDetailsDialog } from '@/components/admin/OrderDetailsDialog';
 import { NeighborhoodFormDialog } from '@/components/admin/NeighborhoodFormDialog';
 import { ConfirmDeleteDialog } from '@/components/admin/ConfirmDeleteDialog';
 import { DateRangeFilter } from '@/components/admin/DateRangeFilter';
-import { ScheduleSettings } from '@/components/admin/ScheduleSettings';
+import { SchedulingSettings } from '@/components/admin/SchedulingSettings';
 import { PrintNodeSettings } from '@/components/admin/PrintNodeSettings';
 import { NotificationsTab } from '@/components/admin/NotificationsTab';
 import { LoyaltySettingsPanel } from '@/components/admin/LoyaltySettingsPanel';
@@ -1243,7 +1243,7 @@ const AdminDashboard = () => {
 
                   <Separator />
 
-                  <ScheduleSettings 
+                  <SchedulingSettings 
                     onScheduleChange={handleScheduleChange}
                     onManualOpenToggle={handleManualOpenToggle}
                   />
