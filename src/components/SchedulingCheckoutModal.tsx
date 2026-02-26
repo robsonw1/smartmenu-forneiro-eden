@@ -662,7 +662,7 @@ export function SchedulingCheckoutModal() {
           ? `${settings.deliveryTimeMin}-${settings.deliveryTimeMax} min`
           : `${settings.pickupTimeMin}-${settings.pickupTimeMax} min`,
         isScheduled: true,
-        scheduledFor: scheduledDate && scheduledTime ? `${scheduledDate}T${scheduledTime}:00` : undefined,
+        scheduledFor: scheduledDate && scheduledTime ? `${scheduledDate}T${scheduledTime}` : undefined,
         ...(deliveryType === 'delivery' && {
           address: {
             street: address.street,
@@ -781,7 +781,7 @@ export function SchedulingCheckoutModal() {
       needsChange: paymentMethod === 'cash' ? needsChange : false,
       changeAmount: paymentMethod === 'cash' && needsChange ? changeAmount : undefined,
       isScheduled: true,
-      scheduledFor: scheduledDate && scheduledTime ? `${scheduledDate}T${scheduledTime}:00` : undefined,
+      scheduledFor: scheduledDate && scheduledTime ? `${scheduledDate}T${scheduledTime}` : undefined,
       tenantId: tenantId || '', // ✅ CRÍTICO: Sempre enviar (vazio ou não - useOrdersStore trata fallback)
     }, shouldAutoPrint);
     
