@@ -33,18 +33,40 @@ export function useSchedulingSlots(tenantId: string | undefined, date?: string) 
 
     const loadSlots = async () => {
       try {
+        console.log('📡 Buscando slots:', { tenantId, date })
+        
         const { data, error: queryError } = await (supabase as any)
-          .from('scheduling_slots_with_availability')
-          .select('*')
+          .from('scheduling_slots')
+          .select('id, tenant_id, slot_date, slot_time, max_orders, current_orders, is_blocked')
           .eq('tenant_id', tenantId)
           .eq('slot_date', date)
           .order('slot_time', { ascending: true })
 
-        if (queryError) throw queryError
-        setSlots(data || [])
-      } catch (err) {
+        if (queryError) {
+          console.error('❌ Erro na query:', queryError)
+          throw queryError
+        }
+
+        console.log('✅ Slots encontrados:', data?.length || 0)
+        
+        // Calcular disponibilidade no cliente
+        const slotsWithAvailability = (data || []).map((slot: any) => ({
+          ...slot,
+          available_spots: slot.max_orders - slot.current_orders,
+          availability_status: 
+            slot.is_blocked 
+              ? 'blocked'
+              : slot.current_orders >= slot.max_orders 
+                ? 'full'
+                : (slot.max_orders - slot.current_orders) <= 2
+                  ? 'almost_full'
+                  : 'available'
+        }))
+        
+        setSlots(slotsWithAvailability)
+      } catch (err: any) {
         console.error('❌ Erro ao carregar slots:', err)
-        setError('Erro ao carregar horários')
+        setError(err.message || 'Erro ao carregar horários')
         toast.error('Não foi possível carregar horários disponíveis')
       } finally {
         setLoading(false)
