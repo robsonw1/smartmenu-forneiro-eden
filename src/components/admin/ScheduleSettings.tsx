@@ -121,11 +121,11 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
 
           {/* Settings - Only show if enabled */}
           {form.enableScheduling && (
-            <div className="space-y-6 p-4 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-300 dark:border-slate-700">
+            <div className="space-y-6 p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
               {/* Min Schedule Minutes */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <Label htmlFor="minScheduleMinutes" className="font-semibold text-foreground">
+                  <Label htmlFor="minScheduleMinutes" className="font-semibold text-gray-900 dark:text-slate-100">
                     Tempo Mínimo de Antecedência
                   </Label>
                   <span className="text-xs bg-yellow-200 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100 px-2 py-1 rounded font-medium">
@@ -142,14 +142,14 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
                     onChange={(e) => handleNumberChange('minScheduleMinutes', e.target.value)}
                     className="w-32"
                   />
-                  <span className="text-sm text-foreground font-medium">minutos</span>
+                  <span className="text-sm text-gray-900 dark:text-slate-100 font-medium">minutos</span>
                   {form.minScheduleMinutes >= 60 && (
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-gray-600 dark:text-slate-400">
                       ({Math.floor(form.minScheduleMinutes / 60)}h {form.minScheduleMinutes % 60}min)
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-gray-600 dark:text-slate-400">
                   Clientes não poderão agendar com menos de {form.minScheduleMinutes} minutos de antecedência
                 </p>
               </div>
@@ -157,7 +157,7 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
               {/* Max Schedule Days */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <Label htmlFor="maxScheduleDays" className="font-semibold text-foreground">
+                  <Label htmlFor="maxScheduleDays" className="font-semibold text-gray-900 dark:text-slate-100">
                     Máximo de Dias de Antecedência
                   </Label>
                   <span className="text-xs bg-green-200 dark:bg-green-800 text-green-900 dark:text-green-100 px-2 py-1 rounded font-medium">
@@ -174,9 +174,9 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
                     onChange={(e) => handleNumberChange('maxScheduleDays', e.target.value)}
                     className="w-32"
                   />
-                  <span className="text-sm text-foreground font-medium">dias</span>
+                  <span className="text-sm text-gray-900 dark:text-slate-100 font-medium">dias</span>
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-gray-600 dark:text-slate-400">
                   Clientes poderão agendar até {form.maxScheduleDays} dia(s) no futuro
                 </p>
               </div>
@@ -210,8 +210,8 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
 
           {/* Disabled State Message */}
           {!form.enableScheduling && (
-            <div className="p-4 bg-slate-200 dark:bg-slate-700 rounded-lg border border-slate-400 dark:border-slate-600 text-center text-foreground">
-              <p className="font-medium">
+            <div className="p-4 bg-slate-200 dark:bg-slate-800 rounded-lg border border-slate-400 dark:border-slate-700 text-center">
+              <p className="font-medium text-gray-900 dark:text-slate-100">
                 <strong>Agendamento desativado</strong> - Ative o toggle acima para configurar as opções
               </p>
             </div>
