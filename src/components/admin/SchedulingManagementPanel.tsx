@@ -295,21 +295,21 @@ export function SchedulingManagementPanel() {
                         {dateSlots.map((slot) => (
                           <div
                             key={slot.id}
-                            className={`flex items-center justify-between p-3 rounded-lg border ${
+                            className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
                               slot.is_blocked
-                                ? 'bg-red-50 border-red-200'
+                                ? 'bg-red-100 dark:bg-red-900 border-red-400 dark:border-red-700 text-red-900 dark:text-red-100'
                                 : slot.current_orders >= slot.max_orders
-                                ? 'bg-orange-50 border-orange-200'
-                                : 'bg-green-50 border-green-200'
+                                ? 'bg-orange-100 dark:bg-orange-900 border-orange-400 dark:border-orange-700 text-orange-900 dark:text-orange-100'
+                                : 'bg-green-100 dark:bg-green-900 border-green-400 dark:border-green-700 text-green-900 dark:text-green-100'
                             }`}
                           >
                             <div className="flex-1">
                               <p className="font-semibold">{slot.slot_time}</p>
-                              <p className="text-sm text-muted-foreground">
+                              <p className="text-sm opacity-90">
                                 {slot.current_orders}/{slot.max_orders} pedidos
                               </p>
                               {slot.is_blocked && (
-                                <p className="text-xs text-red-600 font-semibold">🚫 Bloqueado</p>
+                                <p className="text-xs font-semibold mt-1">🚫 Bloqueado</p>
                               )}
                             </div>
                             <div className="flex gap-1">
@@ -336,7 +336,7 @@ export function SchedulingManagementPanel() {
                                 variant="ghost"
                                 onClick={() => handleDeleteSlot(slot.id)}
                               >
-                                <Trash2 className="w-4 h-4 text-red-600" />
+                                <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
                               </Button>
                             </div>
                           </div>
@@ -370,8 +370,8 @@ export function SchedulingManagementPanel() {
                             <span
                               className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
                                 slot.current_orders >= slot.max_orders
-                                  ? 'bg-red-100 text-red-700'
-                                  : 'bg-green-100 text-green-700'
+                                  ? 'bg-red-100 dark:bg-red-900 text-red-900 dark:text-red-100'
+                                  : 'bg-green-100 dark:bg-green-900 text-green-900 dark:text-green-100'
                               }`}
                             >
                               {slot.current_orders}/{slot.max_orders}
@@ -379,11 +379,11 @@ export function SchedulingManagementPanel() {
                           </TableCell>
                           <TableCell>
                             {slot.is_blocked ? (
-                              <span className="text-xs font-semibold text-red-600">🚫 Bloqueado</span>
+                              <span className="text-xs font-semibold text-red-700 dark:text-red-300">🚫 Bloqueado</span>
                             ) : slot.current_orders >= slot.max_orders ? (
-                              <span className="text-xs font-semibold text-orange-600">⚠️ Cheio</span>
+                              <span className="text-xs font-semibold text-orange-700 dark:text-orange-300">⚠️ Cheio</span>
                             ) : (
-                              <span className="text-xs font-semibold text-green-600">✅ Disponível</span>
+                              <span className="text-xs font-semibold text-green-700 dark:text-green-300">✅ Disponível</span>
                             )}
                           </TableCell>
                           <TableCell className="text-right">
@@ -410,7 +410,7 @@ export function SchedulingManagementPanel() {
                               variant="ghost"
                               onClick={() => handleDeleteSlot(slot.id)}
                             >
-                              <Trash2 className="w-4 h-4 text-red-600" />
+                              <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
                             </Button>
                           </TableCell>
                         </TableRow>
