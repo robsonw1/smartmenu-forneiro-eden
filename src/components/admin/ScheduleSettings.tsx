@@ -15,7 +15,12 @@ type SchedulingForm = {
   allowSchedulingOnClosedDays: boolean;
 };
 
-export function SchedulingSettings() {
+interface SchedulingSettingsProps {
+  onScheduleChange?: (day: any, updates: any) => Promise<void>;
+  onManualOpenToggle?: (day: any, isManuallyOpen: boolean) => Promise<void>;
+}
+
+export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: SchedulingSettingsProps = {}) {
   const { settings, updateSettings } = useSettingsStore();
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
