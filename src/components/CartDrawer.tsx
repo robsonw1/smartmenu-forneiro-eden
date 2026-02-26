@@ -7,6 +7,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCartStore, useUIStore } from '@/store/useStore';
+import { useSettingsStore } from '@/store/useSettingsStore';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import pizzaImage from '@/assets/pizza-hero.jpg';
@@ -14,6 +15,8 @@ import pizzaImage from '@/assets/pizza-hero.jpg';
 export function CartDrawer() {
   const { isCartOpen, setCartOpen, setCheckoutOpen, setSchedulingCheckoutOpen } = useUIStore();
   const { items, removeItem, updateQuantity, getSubtotal, clearCart } = useCartStore();
+  const { settings } = useSettingsStore();
+  const enableScheduling = settings.enableScheduling ?? false;
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -226,15 +229,17 @@ export function CartDrawer() {
                 <ArrowRight className="w-5 h-5" />
               </Button>
 
-              <Button 
-                className="w-full btn-cta gap-2" 
-                size="lg"
-                onClick={handleScheduledOrder}
-                variant="outline"
-              >
-                🗓️ Agendar pedido
-                <ArrowRight className="w-5 h-5" />
-              </Button>
+              {enableScheduling && (
+                <Button 
+                  className="w-full btn-cta gap-2" 
+                  size="lg"
+                  onClick={handleScheduledOrder}
+                  variant="outline"
+                >
+                  🗓️ Agendar pedido
+                  <ArrowRight className="w-5 h-5" />
+                </Button>
+              )}
 
               <Button
                 variant="ghost"
