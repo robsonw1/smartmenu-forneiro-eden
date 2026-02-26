@@ -2,83 +2,105 @@ import { useEffect } from 'react';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { supabase } from '@/integrations/supabase/client';
 
+/**
+ * Hook que sincroniza as configurações em tempo real do Supabase
+ * Funciona entre navegadores, abas, modo incógnito - sincroniza para todos
+ */
 export function useSettingsRealtimeSync() {
-  const { updateSettings, setSetting } = useSettingsStore();
+  const updateSettings = useSettingsStore((s) => s.updateSettings);
 
   useEffect(() => {
-    // Inscrever-se a mudanças na tabela 'settings'
+    let isSubscribed = true;
+
+    const setupRealtimeSync = async () => {
+      try {
+        // 1. Carregar configurações atualizadas do Supabase na primeira vez
+        const { data, error } = await supabase
+          .from('settings')
+          .select('*')
+          .eq('id', 'store-settings')
+          .single();
+
+        if (error) {
+          console.error('❌ Erro ao carregar settings do Supabase:', error);
+          return;
+        }
+
+        if (data && isSubscribed) {
+          console.log('📥 Configurações carregadas do Supabase:', data);
+
+          // Sincronizar para o store - mapear ALL campos
+          const settingsData = data as any;
+          await updateSettings({
+            enableScheduling: settingsData.enable_scheduling ?? false,
+            minScheduleMinutes: settingsData.min_schedule_minutes ?? 30,
+            maxScheduleDays: settingsData.max_schedule_days ?? 7,
+            allowSchedulingOnClosedDays: settingsData.allow_scheduling_on_closed_days ?? false,
+          });
+        }
+      } catch (error) {
+        console.error('❌ Erro ao configurar realtime sync:', error);
+      }
+    };
+
+    // Carregar dados iniciais
+    setupRealtimeSync();
+
+    // 2. Inscrever-se a mudanças em TEMPO REAL
     const channel = supabase
-      .channel('realtime:settings')
+      .channel('public:settings:id=eq.store-settings', {
+        config: {
+          broadcast: { self: true },
+          presence: { key: 'settings' },
+        },
+      })
       .on(
         'postgres_changes',
         {
           event: 'UPDATE',
           schema: 'public',
           table: 'settings',
-          filter: "id=eq.store-settings",
+          filter: 'id=eq.store-settings',
         },
-        (payload: any) => {
-          console.log('🔄 Sincronização em tempo real detectada:', payload.new);
-          
-          const newData = payload.new;
-          
-          // Mapear as colunas do banco para as propiedades do store
-          if (newData.enable_scheduling !== undefined) {
-            setSetting('enableScheduling', newData.enable_scheduling);
-          }
-          if (newData.min_schedule_minutes !== undefined) {
-            setSetting('minScheduleMinutes', newData.min_schedule_minutes);
-          }
-          if (newData.max_schedule_days !== undefined) {
-            setSetting('maxScheduleDays', newData.max_schedule_days);
-          }
-          if (newData.allow_scheduling_on_closed_days !== undefined) {
-            setSetting('allowSchedulingOnClosedDays', newData.allow_scheduling_on_closed_days);
-          }
-          
-          // Sincronizar outras configurações do JSON 'value'
-          if (newData.value) {
-            const value = typeof newData.value === 'string' ? JSON.parse(newData.value) : newData.value;
-            
-            if (value.name !== undefined) setSetting('name', value.name);
-            if (value.phone !== undefined) setSetting('phone', value.phone);
-            if (value.address !== undefined) setSetting('address', value.address);
-            if (value.slogan !== undefined) setSetting('slogan', value.slogan);
-            if (value.schedule !== undefined) setSetting('schedule', value.schedule);
-            if (value.isManuallyOpen !== undefined) setSetting('isManuallyOpen', value.isManuallyOpen);
-            if (value.deliveryTimeMin !== undefined) setSetting('deliveryTimeMin', value.deliveryTimeMin);
-            if (value.deliveryTimeMax !== undefined) setSetting('deliveryTimeMax', value.deliveryTimeMax);
-            if (value.pickupTimeMin !== undefined) setSetting('pickupTimeMin', value.pickupTimeMin);
-            if (value.pickupTimeMax !== undefined) setSetting('pickupTimeMax', value.pickupTimeMax);
-          }
-          
-          // PrintNode settings
-          if (newData.printnode_printer_id !== undefined) {
-            setSetting('printnode_printer_id', newData.printnode_printer_id);
-          }
-          if (newData.print_mode !== undefined) {
-            setSetting('print_mode', newData.print_mode);
-          }
-          if (newData.auto_print_pix !== undefined) {
-            setSetting('auto_print_pix', newData.auto_print_pix);
-          }
-          if (newData.auto_print_card !== undefined) {
-            setSetting('auto_print_card', newData.auto_print_card);
-          }
-          if (newData.auto_print_cash !== undefined) {
-            setSetting('auto_print_cash', newData.auto_print_cash);
+        async (payload: any) => {
+          if (!isSubscribed) return;
+
+          console.log('🔄 REALTIME: Mudança detectada em settings:', payload.new);
+
+          const newData = payload.new as any;
+
+          // Todas as configurações de scheduling
+          if (
+            newData.enable_scheduling !== undefined ||
+            newData.min_schedule_minutes !== undefined ||
+            newData.max_schedule_days !== undefined ||
+            newData.allow_scheduling_on_closed_days !== undefined
+          ) {
+            await updateSettings({
+              enableScheduling: newData.enable_scheduling ?? false,
+              minScheduleMinutes: newData.min_schedule_minutes ?? 30,
+              maxScheduleDays: newData.max_schedule_days ?? 7,
+              allowSchedulingOnClosedDays: newData.allow_scheduling_on_closed_days ?? false,
+            });
+
+            console.log('✅ REALTIME: Settings sincronizadas automaticamente!');
           }
         }
       )
-      .subscribe((status) => {
+      .subscribe((status, error) => {
         if (status === 'SUBSCRIBED') {
-          console.log('✅ Sincronização em tempo real de configurações ativada');
+          console.log('✅ REALTIME: Sincronização em tempo real ativada para settings');
+        } else if (status === 'CLOSED') {
+          console.log('🔴 REALTIME: Sincronização fechada');
+        } else if (error) {
+          console.error('❌ REALTIME: Erro na sincronização:', error);
         }
       });
 
-    // Cleanup - desinscrever quando componente desmontar
+    // Cleanup
     return () => {
+      isSubscribed = false;
       supabase.removeChannel(channel);
     };
-  }, [setSetting]);
+  }, [updateSettings]);
 }
