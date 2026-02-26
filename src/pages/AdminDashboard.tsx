@@ -80,6 +80,7 @@ import { ptBR } from 'date-fns/locale';
 import { useTheme } from '@/hooks/use-theme';
 import { useOrderAlertSound } from '@/hooks/use-order-alert-sound';
 import { useSettingsRealtimeSync } from '@/hooks/use-settings-realtime-sync';
+import { useSettingsInitialLoad } from '@/hooks/use-settings-initial-load';
 import logoForneiro from '@/assets/logo-forneiro.jpg';
 
 const AdminDashboard = () => {
@@ -117,6 +118,9 @@ const AdminDashboard = () => {
 
   // Order alert sound hook - ativa/desativa automaticamente baseado nas settings
   useOrderAlertSound();
+
+  // Carregamento inicial das settings do Supabase
+  useSettingsInitialLoad();
 
   // Sincronização em tempo real de configurações entre abas/navegadores
   useSettingsRealtimeSync();
