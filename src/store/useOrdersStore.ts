@@ -109,8 +109,17 @@ export const useOrdersStore = create<OrdersStore>()(
             rule: pointsRedeemed > 0 ? 'Cliente usou pontos - NÃO ganha novos' : 'Cliente não usou pontos - Ganha novos'
           });
           
-          // 📋 LOGS PRE-INSERT: Mostrar todos os dados sendo enviados
-          const orderPayloadToInsert = {
+          // 📋 Preparar scheduled_for - Converter para ISO se for Date
+          let scheduledForValue: string | null = null;
+          if (newOrder.scheduledFor) {
+            if (typeof newOrder.scheduledFor === 'string') {
+              scheduledForValue = newOrder.scheduledFor;
+            } else if (newOrder.scheduledFor instanceof Date) {
+              scheduledForValue = newOrder.scheduledFor.toISOString();
+            }
+          }
+          
+          console.log('📋 [PRE-INSERT] Enviando para Supabase:', {
             id: newOrder.id,
             customer_name: newOrder.customer.name,
             customer_phone: newOrder.customer.phone,
@@ -124,31 +133,41 @@ export const useOrdersStore = create<OrdersStore>()(
             payment_method: newOrder.paymentMethod,
             change_amount: newOrder.changeAmount,
             is_scheduled: newOrder.isScheduled || false,
-            scheduled_for: (() => {
-              if (!newOrder.scheduledFor) return null;
-              if (typeof newOrder.scheduledFor === 'string') return newOrder.scheduledFor;
-              if (newOrder.scheduledFor instanceof Date) {
-                return newOrder.scheduledFor.toISOString();
-              }
-              return null;
-            })(),
+            scheduled_for: scheduledForValue,
             created_at: localISO,
             address: addressWithMetadata,
             tenant_id: finalTenantId,
-          };
+          });
           
-          console.log('📋 [PRE-INSERT] Payload sendo enviado para Supabase:', orderPayloadToInsert);
-          
-          const { error } = await supabase.from('orders').insert([orderPayloadToInsert] as any);
+          const { error } = await supabase.from('orders').insert([
+            {
+              id: newOrder.id,
+              customer_name: newOrder.customer.name,
+              customer_phone: newOrder.customer.phone,
+              email: customerEmail,
+              delivery_fee: newOrder.deliveryFee,
+              status: newOrder.status,
+              total: newOrder.total,
+              points_discount: newOrder.pointsDiscount || 0,
+              points_redeemed: pointsRedeemed,
+              pending_points: pendingPoints,
+              payment_method: newOrder.paymentMethod,
+              change_amount: newOrder.changeAmount,
+              is_scheduled: newOrder.isScheduled || false,
+              scheduled_for: scheduledForValue,
+              created_at: localISO,
+              address: addressWithMetadata,
+              tenant_id: finalTenantId,
+            },
+          ] as any);
 
           if (error) {
-            console.error('❌ [ERRO-400] Detalhes completos do erro:', {
+            console.error('❌ Erro ao inserir order:', error);
+            console.error('❌ Erro detalhes:', {
               message: error.message,
               code: error.code,
               details: error.details,
               hint: error.hint,
-              status: (error as any).status,
-              payload: orderPayloadToInsert,
             });
             throw error;
           }
