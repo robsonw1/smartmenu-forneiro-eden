@@ -100,10 +100,10 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
       </div>
 
       {/* Main Settings Card */}
-      <Card>
+      <Card className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
         <CardHeader>
-          <CardTitle>Agendamento de Pedidos</CardTitle>
-          <CardDescription>Ative ou desative o recurso de agendamento para seus clientes</CardDescription>
+          <CardTitle className="text-green-900 dark:text-green-100">Agendamento de Pedidos</CardTitle>
+          <CardDescription className="text-green-700 dark:text-green-300">Ative ou desative o recurso de agendamento para seus clientes</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Enable Scheduling Toggle */}
@@ -224,7 +224,7 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
         <Button
           onClick={handleSave}
           disabled={!hasChanges || isSaving}
-          className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
+          className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
         >
           {isSaving ? 'Salvando...' : 'Salvar Configurações'}
         </Button>
@@ -236,13 +236,13 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
       </div>
 
       {/* Summary Card */}
-      <Card className="bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900 dark:to-purple-900 border-blue-300 dark:border-blue-700">
+      <Card className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900 dark:to-emerald-900 border-green-300 dark:border-green-700">
         <CardHeader>
-          <CardTitle className="text-lg text-foreground">Resumo das Configurações</CardTitle>
+          <CardTitle className="text-lg text-green-900 dark:text-green-100">Resumo das Configurações</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-foreground font-medium">Status:</span>
+            <span className="text-green-900 dark:text-green-100 font-medium">Status:</span>
             <span className={`font-semibold ${form.enableScheduling ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
               {form.enableScheduling ? '✓ Ativado' : '✗ Desativado'}
             </span>
@@ -250,15 +250,15 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
           {form.enableScheduling && (
             <>
               <div className="flex items-center justify-between">
-                <span className="text-foreground font-medium">Tempo mínimo:</span>
+                <span className="text-green-900 dark:text-green-100 font-medium">Tempo mínimo:</span>
                 <span className="font-semibold">{form.minScheduleMinutes} minutos</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-foreground font-medium">Dias máximos:</span>
+                <span className="text-green-900 dark:text-green-100 font-medium">Dias máximos:</span>
                 <span className="font-semibold">{form.maxScheduleDays} dia(s)</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-foreground font-medium">Agendamento em dias fechados:</span>
+                <span className="text-green-900 dark:text-green-100 font-medium">Agendamento em dias fechados:</span>
                 <span className={`font-semibold ${form.allowSchedulingOnClosedDays ? 'text-green-700 dark:text-green-300' : 'text-orange-700 dark:text-orange-300'}`}>
                   {form.allowSchedulingOnClosedDays ? 'Permitido' : 'Bloqueado'}
                 </span>
