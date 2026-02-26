@@ -109,7 +109,7 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
           {/* Enable Scheduling Toggle */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', backgroundColor: '#f0fdf4', borderRadius: '8px', borderColor: '#dcfce7', borderWidth: '1px' }}>
             <div className="space-y-1">
-              <Label style={{ fontSize: '16px', fontWeight: '600', color: '#111827' }}>Ativar Agendamento</Label>
+              <Label style={{ fontSize: '16px', fontWeight: '600', color: '#000000' }}>Ativar Agendamento</Label>
               <p style={{ fontSize: '14px', color: '#374151' }}>Permite que clientes agendem pedidos para datas e horários futuros</p>
             </div>
             <Switch
@@ -125,7 +125,7 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
               {/* Min Schedule Minutes */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <Label htmlFor="minScheduleMinutes" style={{ fontWeight: '600', color: '#111827' }}>
+                  <Label htmlFor="minScheduleMinutes" style={{ fontWeight: '600', color: '#000000' }}>
                     Tempo Mínimo de Antecedência
                   </Label>
                   <span style={{ fontSize: '12px', backgroundColor: '#fef3c7', color: '#92400e', padding: '4px 8px', borderRadius: '4px', fontWeight: '500' }}>
@@ -143,7 +143,7 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
                     className="w-32"
                     style={{ borderColor: '#d1d5db', color: '#111827' }}
                   />
-                  <span style={{ fontSize: '14px', color: '#374151', fontWeight: '500' }}>minutos</span>
+                  <span style={{ fontSize: '14px', color: '#111827', fontWeight: '500' }}>minutos</span>
                   {form.minScheduleMinutes >= 60 && (
                     <span style={{ fontSize: '12px', color: '#6b7280' }}>
                       ({Math.floor(form.minScheduleMinutes / 60)}h {form.minScheduleMinutes % 60}min)
@@ -158,7 +158,7 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
               {/* Max Schedule Days */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <Label htmlFor="maxScheduleDays" style={{ fontWeight: '600', color: '#111827' }}>
+                  <Label htmlFor="maxScheduleDays" style={{ fontWeight: '600', color: '#000000' }}>
                     Máximo de Dias de Antecedência
                   </Label>
                   <span style={{ fontSize: '12px', backgroundColor: '#dcfce7', color: '#166534', padding: '4px 8px', borderRadius: '4px', fontWeight: '500' }}>
@@ -176,7 +176,7 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
                     className="w-32"
                     style={{ borderColor: '#d1d5db', color: '#111827' }}
                   />
-                  <span style={{ fontSize: '14px', color: '#374151', fontWeight: '500' }}>dias</span>
+                  <span style={{ fontSize: '14px', color: '#111827', fontWeight: '500' }}>dias</span>
                 </div>
                 <p style={{ fontSize: '12px', color: '#6b7280' }}>
                   Clientes poderão agendar até {form.maxScheduleDays} dia(s) no futuro
@@ -186,7 +186,7 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
               {/* Allow Scheduling on Closed Days */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: '#fef3c7', borderRadius: '6px', borderColor: '#fcd34d', borderWidth: '1px' }}>
                 <div className="space-y-1">
-                  <Label style={{ fontWeight: '600', color: '#111827' }}>Permitir Agendamento em Dias Fechados</Label>
+                  <Label style={{ fontWeight: '600', color: '#000000' }}>Permitir Agendamento em Dias Fechados</Label>
                   <p style={{ fontSize: '12px', color: '#374151' }}>
                     Se desativado, clientes não podem agendar para dias em que a loja está fechada
                   </p>
