@@ -152,7 +152,6 @@ export const useOrdersStore = create<OrdersStore>()(
               points_redeemed: pointsRedeemed,
               pending_points: pendingPoints,
               payment_method: newOrder.paymentMethod,
-              change_amount: newOrder.changeAmount,
               is_scheduled: newOrder.isScheduled || false,
               scheduled_for: scheduledForValue,
               created_at: localISO,
