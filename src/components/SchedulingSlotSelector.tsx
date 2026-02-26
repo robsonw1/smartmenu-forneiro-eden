@@ -21,10 +21,21 @@ export function SchedulingSlotSelector({
   minDate,
   maxDate
 }: SchedulingSlotSelectorProps) {
+  console.log('🔍 [SchedulingSlotSelector] Props recebidas:', { tenantId, selectedDate, selectedTime })
+  
   const { slots, loading, error, isEmpty } = useSchedulingSlots(
     tenantId,
     selectedDate || undefined
   )
+
+  if (!tenantId) {
+    return (
+      <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
+        <Calendar className="w-4 h-4 flex-shrink-0" />
+        ⚠️ Carregando informações necessárias... por favor aguarde
+      </div>
+    )
+  }
 
   if (!selectedDate) {
     return (
