@@ -101,14 +101,16 @@ export function SchedulingSlotSelector({
 
       {bestSlot && (
         <div className="p-3 bg-blue-100 dark:bg-blue-900 border border-blue-400 dark:border-blue-700 rounded-lg text-sm text-blue-900 dark:text-blue-100 font-medium">
-          💡 <strong>Melhor horário:</strong> {bestSlot.slot_time} ({bestSlot.available_spots} lugares)
+          💡 <strong>Melhor horário:</strong> {bestSlot.slot_time.substring(0, 5)} ({bestSlot.available_spots} lugares)
         </div>
       )}
 
       {/* Grade de horários */}
       <div className="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
         {slots.map(slot => {
-          const isSelected = selectedTime === slot.slot_time
+          // PostgreSQL TIME retorna como "13:00:00" mas precisamos de "13:00"
+          const formattedTime = slot.slot_time.substring(0, 5)
+          const isSelected = selectedTime === formattedTime
           const isAvailable = slot.availability_status === 'available'
           const isAlmostFull = slot.availability_status === 'almost_full'
           const isFull = slot.availability_status === 'full'
@@ -117,7 +119,7 @@ export function SchedulingSlotSelector({
           return (
             <Button
               key={slot.id}
-              onClick={() => !isFull && !isBlocked && onTimeChange(slot.slot_time)}
+              onClick={() => !isFull && !isBlocked && onTimeChange(formattedTime)}
               disabled={isFull || isBlocked}
               variant={isSelected ? 'default' : 'outline'}
               className={cn(
@@ -127,7 +129,7 @@ export function SchedulingSlotSelector({
                 getSlotBgColor(slot)
               )}
             >
-              <span className="font-semibold">{slot.slot_time}</span>
+              <span className="font-semibold">{formattedTime}</span>
               <span className="text-xs mt-1 opacity-75">
                 {slot.current_orders}/{slot.max_orders}
               </span>
