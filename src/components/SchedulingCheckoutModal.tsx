@@ -1727,14 +1727,17 @@ export function SchedulingCheckoutModal() {
 
                     {/* Slot Selector - Novo componente com horários disponíveis */}
                     {scheduledDate && (
-                      <SchedulingSlotSelector
-                        tenantId={tenantId}
-                        selectedDate={scheduledDate}
-                        selectedTime={scheduledTime}
-                        onTimeChange={setScheduledTime}
-                        minDate={minDate}
+                      <>
+                        {console.log('🎯 [MODAL] Renderizando SchedulingSlotSelector com tenantId:', tenantId)}
+                        <SchedulingSlotSelector
+                          tenantId={tenantId}
+                          selectedDate={scheduledDate}
+                          selectedTime={scheduledTime}
+                          onTimeChange={setScheduledTime}
+                          minDate={minDate}
                         maxDate={maxDate}
                       />
+                      </>
                     )}
 
                     {/* Summary */}
