@@ -74,7 +74,6 @@ import { FaithfulCustomersAdmin } from '@/components/admin/FaithfulCustomersAdmi
 import { CouponManagementPanel } from '@/components/admin/CouponManagementPanel';
 import { PaymentSettingsPanel } from '@/components/admin/PaymentSettingsPanel';
 import { AnalyticsPanel } from '@/components/admin/AnalyticsPanel';
-import { SchedulingSettings } from '@/components/admin/SchedulingSettings';
 import { toast } from 'sonner';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
