@@ -172,6 +172,43 @@ export const useOrdersStore = create<OrdersStore>()(
           }
           console.log('✅ Order inserida com sucesso:', newOrder.id, 'em', localISO, 'com email:', customerEmail, 'pending_points:', pendingPoints, 'tenant_id:', finalTenantId);
 
+          // 🔀 NOVA INTEGRAÇÃO: Reservar slot de agendamento se pedido está agendado
+          if (newOrder.isScheduled && scheduledForValue && finalTenantId) {
+            try {
+              const scheduledDate = scheduledForValue.split('T')[0]; // 'YYYY-MM-DD'
+              const scheduledTime = scheduledForValue.split('T')[1]?.substring(0, 5); // 'HH:MM'
+              
+              console.log('🔄 Tentando reservar slot:', {
+                orderId: newOrder.id,
+                tenantId: finalTenantId,
+                slotDate: scheduledDate,
+                slotTime: scheduledTime,
+              });
+
+              const { data: reservationResult, error: reservationError } = await supabase.functions.invoke(
+                'reserve-scheduling-slot',
+                {
+                  body: {
+                    orderId: newOrder.id,
+                    tenantId: finalTenantId,
+                    slotDate: scheduledDate,
+                    slotTime: scheduledTime,
+                  },
+                }
+              );
+
+              if (reservationError) {
+                console.warn('⚠️ Falha ao reservar slot:', reservationError);
+                // Não lançar erro aqui - o pedido foi criado mas o slot pode estar cheio
+              } else {
+                console.log('✅ Slot reservado com sucesso:', reservationResult);
+              }
+            } catch (err) {
+              console.error('❌ Erro ao chamar reserve-scheduling-slot:', err);
+              // Não bloquear criação do pedido se reserva falhar
+            }
+          }
+
           // Salvar itens do pedido - APENAS os campos que existem na tabela order_items
           const orderItems = newOrder.items.map((item) => ({
             order_id: newOrder.id,
