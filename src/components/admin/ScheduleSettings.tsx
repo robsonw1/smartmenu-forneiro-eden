@@ -1,134 +1,267 @@
+import { useEffect, useState } from 'react';
+import { Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { useSettingsStore, WeekSchedule } from '@/store/useSettingsStore';
-import { Clock, Power } from 'lucide-react';
+import { useSettingsStore } from '@/store/useSettingsStore';
+import { toast } from 'sonner';
 
-const dayLabels: Record<keyof WeekSchedule, string> = {
-  monday: 'Segunda-feira',
-  tuesday: 'Terça-feira',
-  wednesday: 'Quarta-feira',
-  thursday: 'Quinta-feira',
-  friday: 'Sexta-feira',
-  saturday: 'Sábado',
-  sunday: 'Domingo',
+type SchedulingForm = {
+  enableScheduling: boolean;
+  minScheduleMinutes: number;
+  maxScheduleDays: number;
+  allowSchedulingOnClosedDays: boolean;
 };
 
-const dayOrder: (keyof WeekSchedule)[] = [
-  'monday',
-  'tuesday',
-  'wednesday',
-  'thursday',
-  'friday',
-  'saturday',
-  'sunday',
-];
+export function SchedulingSettings() {
+  const { settings, updateSettings } = useSettingsStore();
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [form, setForm] = useState<SchedulingForm>({
+    enableScheduling: settings.enableScheduling ?? false,
+    minScheduleMinutes: settings.minScheduleMinutes ?? 30,
+    maxScheduleDays: settings.maxScheduleDays ?? 7,
+    allowSchedulingOnClosedDays: settings.allowSchedulingOnClosedDays ?? false,
+  });
 
-interface ScheduleSettingsProps {
-  onScheduleChange?: (day: keyof WeekSchedule, updates: any) => void;
-  onManualOpenToggle?: () => void;
-}
+  useEffect(() => {
+    setForm({
+      enableScheduling: settings.enableScheduling ?? false,
+      minScheduleMinutes: settings.minScheduleMinutes ?? 30,
+      maxScheduleDays: settings.maxScheduleDays ?? 7,
+      allowSchedulingOnClosedDays: settings.allowSchedulingOnClosedDays ?? false,
+    });
+    setHasChanges(false);
+  }, [settings]);
 
-export function ScheduleSettings({ onScheduleChange, onManualOpenToggle }: ScheduleSettingsProps) {
-  const settings = useSettingsStore((s) => s.settings);
-  const updateDaySchedule = useSettingsStore((s) => s.updateDaySchedule);
-  const toggleManualOpen = useSettingsStore((s) => s.toggleManualOpen);
-  const isStoreOpen = useSettingsStore((s) => s.isStoreOpen);
-
-  const storeOpen = isStoreOpen();
-
-  const handleDayScheduleChange = (day: keyof WeekSchedule, updates: any) => {
-    updateDaySchedule(day, updates);
-    onScheduleChange?.(day, updates);
+  const handleToggleChange = (field: keyof Pick<SchedulingForm, 'enableScheduling' | 'allowSchedulingOnClosedDays'>, value: boolean) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+    setHasChanges(true);
   };
 
-  const handleManualOpenToggle = () => {
-    toggleManualOpen();
-    onManualOpenToggle?.();
+  const handleNumberChange = (field: keyof Pick<SchedulingForm, 'minScheduleMinutes' | 'maxScheduleDays'>, value: string) => {
+    const numValue = parseInt(value) || 0;
+    setForm(prev => ({ ...prev, [field]: numValue }));
+    setHasChanges(true);
+  };
+
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+
+      // Validations
+      if (form.minScheduleMinutes < 0) {
+        toast.error('Tempo mínimo não pode ser negativo');
+        return;
+      }
+
+      if (form.maxScheduleDays < 1) {
+        toast.error('Máximo de dias deve ser pelo menos 1');
+        return;
+      }
+
+      if (form.minScheduleMinutes > form.maxScheduleDays * 24 * 60) {
+        toast.error('Tempo mínimo muito alto em relação aos dias máximos');
+      }
+
+      await updateSettings({
+        enableScheduling: form.enableScheduling,
+        minScheduleMinutes: form.minScheduleMinutes,
+        maxScheduleDays: form.maxScheduleDays,
+        allowSchedulingOnClosedDays: form.allowSchedulingOnClosedDays,
+      });
+
+      setHasChanges(false);
+      toast.success('Configurações de agendamento salvas com sucesso');
+    } catch (error) {
+      console.error('Erro ao salvar configurações:', error);
+      toast.error('Falha ao salvar configurações');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
-    <div className="space-y-6">
-      {/* Manual Open/Close Toggle */}
-      <div className="flex items-center justify-between p-4 bg-secondary/50 rounded-xl border">
-        <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-            settings.isManuallyOpen ? 'bg-green-500/20' : 'bg-red-500/20'
-          }`}>
-            <Power className={`w-5 h-5 ${settings.isManuallyOpen ? 'text-green-500' : 'text-red-500'}`} />
-          </div>
-          <div>
-            <p className="font-semibold">Estabelecimento</p>
-            <p className="text-sm text-muted-foreground">
-              {settings.isManuallyOpen ? 'Aberto para pedidos' : 'Fechado manualmente'}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <Badge variant={storeOpen ? 'default' : 'destructive'}>
-            {storeOpen ? 'ABERTO AGORA' : 'FECHADO'}
-          </Badge>
-          <Button
-            variant={settings.isManuallyOpen ? 'destructive' : 'default'}
-            size="sm"
-            onClick={handleManualOpenToggle}
-          >
-            {settings.isManuallyOpen ? 'Fechar Loja' : 'Abrir Loja'}
-          </Button>
+    <div className="space-y-6 p-6">
+      {/* Header */}
+      <div className="flex items-center gap-2">
+        <Clock className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Configurações de Agendamento</h2>
+          <p className="text-sm text-muted-foreground">Gerencie as opções de agendamento de pedidos</p>
         </div>
       </div>
 
-      {/* Schedule per day */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 mb-4">
-          <Clock className="w-5 h-5 text-primary" />
-          <h4 className="font-semibold">Horário de Funcionamento por Dia</h4>
-        </div>
-        
-        {dayOrder.map((day) => {
-          const schedule = settings.schedule[day];
-          return (
-            <div 
-              key={day} 
-              className={`flex items-center justify-between p-3 rounded-lg border ${
-                schedule.isOpen ? 'bg-card' : 'bg-secondary/30 opacity-60'
-              }`}
-            >
-        <div className="flex items-center gap-4 flex-1">
-                <Switch
-                  checked={schedule.isOpen}
-                  onCheckedChange={(checked) => handleDayScheduleChange(day, { isOpen: checked })}
-                />
-                <span className="font-medium w-32">{dayLabels[day]}</span>
-              </div>
-              
-              {schedule.isOpen && (
+      {/* Main Settings Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Agendamento de Pedidos</CardTitle>
+          <CardDescription>Ative ou desative o recurso de agendamento para seus clientes</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Enable Scheduling Toggle */}
+          <div className="flex items-center justify-between p-4 bg-blue-100 dark:bg-blue-900 rounded-lg border border-blue-400 dark:border-blue-700 text-blue-900 dark:text-blue-100">
+            <div className="space-y-1">
+              <Label className="text-base font-semibold text-blue-900 dark:text-blue-100">Ativar Agendamento</Label>
+              <p className="text-sm text-blue-800 dark:text-blue-200">Permite que clientes agendem pedidos para datas e horários futuros</p>
+            </div>
+            <Switch
+              checked={form.enableScheduling}
+              onCheckedChange={(value) => handleToggleChange('enableScheduling', value)}
+              className="ml-4"
+            />
+          </div>
+
+          {/* Settings - Only show if enabled */}
+          {form.enableScheduling && (
+            <div className="space-y-6 p-4 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-300 dark:border-slate-700">
+              {/* Min Schedule Minutes */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Label htmlFor="minScheduleMinutes" className="font-semibold text-foreground">
+                    Tempo Mínimo de Antecedência
+                  </Label>
+                  <span className="text-xs bg-yellow-200 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100 px-2 py-1 rounded font-medium">
+                    Recomendado: 30-120 minutos
+                  </span>
+                </div>
                 <div className="flex items-center gap-2">
                   <Input
-                    type="time"
-                    value={schedule.openTime}
-                    onChange={(e) => handleDayScheduleChange(day, { openTime: e.target.value })}
-                    className="w-28"
+                    id="minScheduleMinutes"
+                    type="number"
+                    min="0"
+                    max="1440"
+                    value={form.minScheduleMinutes}
+                    onChange={(e) => handleNumberChange('minScheduleMinutes', e.target.value)}
+                    className="w-32"
                   />
-                  <span className="text-muted-foreground">às</span>
-                  <Input
-                    type="time"
-                    value={schedule.closeTime}
-                    onChange={(e) => handleDayScheduleChange(day, { closeTime: e.target.value })}
-                    className="w-28"
-                  />
+                  <span className="text-sm text-foreground font-medium">minutos</span>
+                  {form.minScheduleMinutes >= 60 && (
+                    <span className="text-xs text-muted-foreground">
+                      ({Math.floor(form.minScheduleMinutes / 60)}h {form.minScheduleMinutes % 60}min)
+                    </span>
+                  )}
                 </div>
-              )}
-              
-              {!schedule.isOpen && (
-                <Badge variant="outline">Fechado</Badge>
-              )}
+                <p className="text-xs text-muted-foreground">
+                  Clientes não poderão agendar com menos de {form.minScheduleMinutes} minutos de antecedência
+                </p>
+              </div>
+
+              {/* Max Schedule Days */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Label htmlFor="maxScheduleDays" className="font-semibold text-foreground">
+                    Máximo de Dias de Antecedência
+                  </Label>
+                  <span className="text-xs bg-green-200 dark:bg-green-800 text-green-900 dark:text-green-100 px-2 py-1 rounded font-medium">
+                    Recomendado: 7-30 dias
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="maxScheduleDays"
+                    type="number"
+                    min="1"
+                    max="365"
+                    value={form.maxScheduleDays}
+                    onChange={(e) => handleNumberChange('maxScheduleDays', e.target.value)}
+                    className="w-32"
+                  />
+                  <span className="text-sm text-foreground font-medium">dias</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Clientes poderão agendar até {form.maxScheduleDays} dia(s) no futuro
+                </p>
+              </div>
+
+              {/* Allow Scheduling on Closed Days */}
+              <div className="flex items-center justify-between p-3 bg-orange-100 dark:bg-orange-900 rounded border border-orange-400 dark:border-orange-700 text-orange-900 dark:text-orange-100">
+                <div className="space-y-1">
+                  <Label className="font-semibold text-orange-900 dark:text-orange-100">Permitir Agendamento em Dias Fechados</Label>
+                  <p className="text-xs text-orange-800 dark:text-orange-200">
+                    Se desativado, clientes não podem agendar para dias em que a loja está fechada
+                  </p>
+                </div>
+                <Switch
+                  checked={form.allowSchedulingOnClosedDays}
+                  onCheckedChange={(value) => handleToggleChange('allowSchedulingOnClosedDays', value)}
+                  className="ml-4"
+                />
+              </div>
+
+              {/* Info Box */}
+              <div className="p-3 bg-blue-100 dark:bg-blue-900 border border-blue-400 dark:border-blue-700 rounded-lg text-blue-900 dark:text-blue-100">
+                <p className="text-sm font-medium">
+                  <strong>💡 Dica:</strong> Para uma pizzaria típica, recomendamos:
+                  <br />• Tempo mínimo: 60-120 minutos (para preparação)
+                  <br />• Dias máximos: 7-15 dias (para gestão de demanda)
+                  <br />• Desativar agendamento em dias fechados (a menos que ofereça combo weekend)
+                </p>
+              </div>
             </div>
-          );
-        })}
+          )}
+
+          {/* Disabled State Message */}
+          {!form.enableScheduling && (
+            <div className="p-4 bg-slate-200 dark:bg-slate-700 rounded-lg border border-slate-400 dark:border-slate-600 text-center text-foreground">
+              <p className="font-medium">
+                <strong>Agendamento desativado</strong> - Ative o toggle acima para configurar as opções
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Save Button */}
+      <div className="flex gap-3 pt-4">
+        <Button
+          onClick={handleSave}
+          disabled={!hasChanges || isSaving}
+          className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
+        >
+          {isSaving ? 'Salvando...' : 'Salvar Configurações'}
+        </Button>
+        {hasChanges && (
+          <p className="text-sm text-orange-600 dark:text-orange-400 flex items-center gap-2 font-medium">
+            ⚠️ Existem mudanças não salvas
+          </p>
+        )}
       </div>
+
+      {/* Summary Card */}
+      <Card className="bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900 dark:to-purple-900 border-blue-300 dark:border-blue-700">
+        <CardHeader>
+          <CardTitle className="text-lg text-foreground">Resumo das Configurações</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-foreground font-medium">Status:</span>
+            <span className={`font-semibold ${form.enableScheduling ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
+              {form.enableScheduling ? '✓ Ativado' : '✗ Desativado'}
+            </span>
+          </div>
+          {form.enableScheduling && (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-foreground font-medium">Tempo mínimo:</span>
+                <span className="font-semibold">{form.minScheduleMinutes} minutos</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-foreground font-medium">Dias máximos:</span>
+                <span className="font-semibold">{form.maxScheduleDays} dia(s)</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-foreground font-medium">Agendamento em dias fechados:</span>
+                <span className={`font-semibold ${form.allowSchedulingOnClosedDays ? 'text-green-700 dark:text-green-300' : 'text-orange-700 dark:text-orange-300'}`}>
+                  {form.allowSchedulingOnClosedDays ? 'Permitido' : 'Bloqueado'}
+                </span>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
