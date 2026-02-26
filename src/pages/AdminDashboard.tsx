@@ -79,6 +79,7 @@ import { format, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useTheme } from '@/hooks/use-theme';
 import { useOrderAlertSound } from '@/hooks/use-order-alert-sound';
+import { useSettingsRealtimeSync } from '@/hooks/use-settings-realtime-sync';
 import logoForneiro from '@/assets/logo-forneiro.jpg';
 
 const AdminDashboard = () => {
@@ -116,6 +117,9 @@ const AdminDashboard = () => {
 
   // Order alert sound hook - ativa/desativa automaticamente baseado nas settings
   useOrderAlertSound();
+
+  // Sincronização em tempo real de configurações entre abas/navegadores
+  useSettingsRealtimeSync();
 
   // Local state for settings form
   const [settingsForm, setSettingsForm] = useState(settings);
