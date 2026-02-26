@@ -100,12 +100,12 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
       </div>
 
       {/* Main Settings Card */}
-      <Card className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
-        <CardHeader>
+      <Card>
+        <CardHeader className="bg-green-50 dark:bg-green-950 border-b border-green-200 dark:border-green-800">
           <CardTitle className="text-green-900 dark:text-green-100">Agendamento de Pedidos</CardTitle>
           <CardDescription className="text-green-700 dark:text-green-300">Ative ou desative o recurso de agendamento para seus clientes</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 bg-green-50 dark:bg-green-950">
           {/* Enable Scheduling Toggle */}
           <div className="flex items-center justify-between p-4 bg-blue-100 dark:bg-blue-900 rounded-lg border border-blue-400 dark:border-blue-700 text-blue-900 dark:text-blue-100">
             <div className="space-y-1">
@@ -236,11 +236,11 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
       </div>
 
       {/* Summary Card */}
-      <Card className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900 dark:to-emerald-900 border-green-300 dark:border-green-700">
-        <CardHeader>
+      <Card>
+        <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900 dark:to-emerald-900 border-b border-green-300 dark:border-green-700">
           <CardTitle className="text-lg text-green-900 dark:text-green-100">Resumo das Configurações</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="space-y-2 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900 dark:to-emerald-900">
           <div className="flex items-center justify-between">
             <span className="text-green-900 dark:text-green-100 font-medium">Status:</span>
             <span className={`font-semibold ${form.enableScheduling ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
