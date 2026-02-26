@@ -5,6 +5,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useRealtimeSync } from "@/hooks/use-realtime-sync";
+import { useSettingsRealtimeSync } from "@/hooks/use-settings-realtime-sync";
+import { useSettingsInitialLoad } from "@/hooks/use-settings-initial-load";
 import { useLoyaltySettingsStore } from "@/store/useLoyaltySettingsStore";
 import { useSettingsStore } from "@/store/useSettingsStore";
 import Index from "./pages/Index.tsx";
@@ -17,6 +19,8 @@ const queryClient = new QueryClient();
 // Componente wrapper para usar hooks
 const AppContent = () => {
   useRealtimeSync();
+  useSettingsInitialLoad();
+  useSettingsRealtimeSync();
   const { loadSettings } = useLoyaltySettingsStore();
 
   // Carregar configurações de fidelização ao iniciar
