@@ -24,6 +24,8 @@ import { useLoyaltyStore } from '@/store/useLoyaltyStore';
 import { useLoyaltySettingsStore } from '@/store/useLoyaltySettingsStore';
 import { useCouponManagementStore } from '@/store/useCouponManagementStore';
 import { useOrderCancellationSync } from '@/hooks/use-order-cancellation-sync';
+import { useSchedulingCancellationSync } from '@/hooks/use-scheduling-availability';
+import { SchedulingSlotSelector } from './SchedulingSlotSelector';
 import { supabase } from '@/integrations/supabase/client';
 import { sendOrderSummaryToWhatsApp } from '@/lib/whatsapp-notification';
 import { PostCheckoutLoyaltyModal } from './PostCheckoutLoyaltyModal';
@@ -147,6 +149,13 @@ export function SchedulingCheckoutModal() {
     isSchedulingCheckoutOpen,
     customer?.email,
     refreshCurrentCustomer
+  );
+
+  // 🔴 REALTIME: Liberar slot quando pedido agendado é cancelado
+  useSchedulingCancellationSync(
+    isSchedulingCheckoutOpen,
+    customer?.email,
+    tenantId
   );
 
   // ✅ Função para formatar telefone
@@ -1716,24 +1725,17 @@ export function SchedulingCheckoutModal() {
                       )}
                     </div>
 
-                    {/* Time Input */}
-                    <div>
-                      <Label htmlFor="scheduled-time" className="text-sm font-medium">
-                        Horário (formato 24h)
-                      </Label>
-                      <Input
-                        id="scheduled-time"
-                        type="time"
-                        value={scheduledTime}
-                        onChange={(e) => setScheduledTime(e.target.value)}
-                        className="mt-1"
+                    {/* Slot Selector - Novo componente com horários disponíveis */}
+                    {scheduledDate && (
+                      <SchedulingSlotSelector
+                        tenantId={tenantId}
+                        selectedDate={scheduledDate}
+                        selectedTime={scheduledTime}
+                        onTimeChange={setScheduledTime}
+                        minDate={minDate}
+                        maxDate={maxDate}
                       />
-                      {scheduledTime && (
-                        <div className="mt-2 p-2 bg-primary/10 rounded text-sm font-medium text-primary">
-                          🕐 {scheduledTime}
-                        </div>
-                      )}
-                    </div>
+                    )}
 
                     {/* Summary */}
                     {scheduledDate && scheduledTime && (
