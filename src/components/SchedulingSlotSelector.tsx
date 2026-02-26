@@ -30,7 +30,7 @@ export function SchedulingSlotSelector({
 
   if (!tenantId) {
     return (
-      <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
+      <div className="flex items-center gap-2 p-3 bg-yellow-100 dark:bg-yellow-900 border border-yellow-400 dark:border-yellow-700 rounded-lg text-sm text-yellow-900 dark:text-yellow-100">
         <Calendar className="w-4 h-4 flex-shrink-0" />
         ⚠️ Carregando informações necessárias... por favor aguarde
       </div>
@@ -57,7 +57,7 @@ export function SchedulingSlotSelector({
 
   if (error) {
     return (
-      <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+      <div className="flex items-center gap-2 p-3 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 rounded-lg text-sm text-red-900 dark:text-red-100">
         <AlertCircle className="w-4 h-4 flex-shrink-0" />
         {error}
       </div>
@@ -86,10 +86,10 @@ export function SchedulingSlotSelector({
   }
 
   const getSlotBgColor = (slot: SchedulingSlot) => {
-    if (selectedTime === slot.slot_time) return 'bg-primary text-white'
-    if (slot.is_blocked || slot.availability_status === 'full') return 'bg-gray-100'
-    if (slot.availability_status === 'almost_full') return 'bg-yellow-50'
-    return 'bg-green-50'
+    if (selectedTime === slot.slot_time) return 'bg-primary text-white dark:text-white'
+    if (slot.is_blocked || slot.availability_status === 'full') return 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+    if (slot.availability_status === 'almost_full') return 'bg-yellow-100 dark:bg-yellow-900 text-yellow-900 dark:text-yellow-100'
+    return 'bg-green-100 dark:bg-green-900 text-green-900 dark:text-green-100'
   }
 
   return (
@@ -100,7 +100,7 @@ export function SchedulingSlotSelector({
       </Label>
 
       {bestSlot && (
-        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+        <div className="p-3 bg-blue-100 dark:bg-blue-900 border border-blue-400 dark:border-blue-700 rounded-lg text-sm text-blue-900 dark:text-blue-100 font-medium">
           💡 <strong>Melhor horário:</strong> {bestSlot.slot_time} ({bestSlot.available_spots} lugares)
         </div>
       )}
@@ -139,22 +139,22 @@ export function SchedulingSlotSelector({
       </div>
 
       {/* Legenda de cores */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs border-t pt-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs border-t border-border dark:border-slate-700 pt-3 text-foreground dark:text-slate-300">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-green-400 rounded"></div>
-          <span>Disponível</span>
+          <div className="w-3 h-3 bg-green-500 dark:bg-green-400 rounded"></div>
+          <span className="font-medium">Disponível</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-yellow-400 rounded"></div>
-          <span>Poucos spots</span>
+          <div className="w-3 h-3 bg-yellow-500 dark:bg-yellow-400 rounded"></div>
+          <span className="font-medium">Poucos spots</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-gray-400 rounded"></div>
-          <span>Cheio</span>
+          <div className="w-3 h-3 bg-gray-500 dark:bg-gray-400 rounded"></div>
+          <span className="font-medium">Cheio</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-gray-300 rounded line-through"></div>
-          <span>Bloqueado</span>
+          <div className="w-3 h-3 bg-gray-400 dark:bg-gray-500 rounded line-through"></div>
+          <span className="font-medium">Bloqueado</span>
         </div>
       </div>
     </div>
