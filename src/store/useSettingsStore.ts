@@ -44,7 +44,6 @@ interface StoreSettings {
 interface SettingsStore {
   settings: StoreSettings;
   updateSettings: (settings: Partial<StoreSettings>) => Promise<void>;
-  syncSettings: (settings: Partial<StoreSettings>) => void; // ✅ NOVO: Apenas sincroniza estado local sem salvar
   setSetting: (key: keyof StoreSettings, value: any) => void;
   updateDaySchedule: (day: keyof WeekSchedule, schedule: Partial<DaySchedule>) => void;
   toggleManualOpen: () => void;
@@ -148,15 +147,6 @@ export const useSettingsStore = create<SettingsStore>()(
     } catch (error) {
       console.error('❌ Erro ao atualizar settings:', error);
     }
-  },
-
-  // ✅ NOVO: Sincroniza settings do realtime sem tentar salvar novamente
-  syncSettings: (newSettings) => {
-    console.log('📥 Sincronizando settings em tempo real:', newSettings);
-    set((state) => ({
-      settings: { ...state.settings, ...newSettings },
-    }));
-    console.log('✅ Settings sincronizadas localmente com sucesso');
   },
 
   setSetting: (key, value) =>
