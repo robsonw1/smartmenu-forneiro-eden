@@ -51,6 +51,8 @@ export function useSchedulingSlotsManagement(tenantId: string | undefined) {
   // 🆕 CRIAR NOVO SLOT
   const createSlot = async (slot: Omit<SchedulingSlotManagement, 'id' | 'created_at'>) => {
     try {
+      console.log('➕ Criando novo slot:', { date: slot.slot_date, time: slot.slot_time, max: slot.max_orders })
+      
       const { data, error: insertError } = await (supabase as any)
         .from('scheduling_slots')
         .insert([
@@ -65,6 +67,7 @@ export function useSchedulingSlotsManagement(tenantId: string | undefined) {
 
       if (insertError) throw insertError
       
+      console.log('✅ Slot criado com sucesso:', data?.[0]?.id)
       toast.success(`Slot ${slot.slot_time} criado com sucesso`)
       return data?.[0]
     } catch (err: any) {
@@ -97,13 +100,21 @@ export function useSchedulingSlotsManagement(tenantId: string | undefined) {
   // 🗑️ DELETAR SLOT
   const deleteSlot = async (id: string) => {
     try {
+      // ✅ OTIMISTA: Atualizar estado local IMEDIATAMENTE
+      setSlots(prev => prev.filter(s => s.id !== id))
+      
       const { error: deleteError } = await (supabase as any)
         .from('scheduling_slots')
         .delete()
         .eq('id', id)
 
-      if (deleteError) throw deleteError
+      if (deleteError) {
+        // ❌ Se falhar, refazer o estado
+        await loadSlots()
+        throw deleteError
+      }
       
+      console.log('✅ Slot deletado com sucesso (local + db)')
       toast.success('Slot deletado com sucesso')
     } catch (err: any) {
       console.error('❌ Erro ao deletar slot:', err)
@@ -115,6 +126,8 @@ export function useSchedulingSlotsManagement(tenantId: string | undefined) {
   // 🔒 BLOQUEAR/DESBLOQUEAR SLOT
   const toggleBlockSlot = async (id: string, blocked: boolean) => {
     try {
+      console.log(blocked ? '🔒 Bloqueando slot' : '🔓 Desbloqueando slot', { slotId: id })
+      
       const { data, error: updateError } = await (supabase as any)
         .from('scheduling_slots')
         .update({ is_blocked: blocked })
@@ -123,6 +136,7 @@ export function useSchedulingSlotsManagement(tenantId: string | undefined) {
 
       if (updateError) throw updateError
       
+      console.log('✅ Status de bloqueio atualizado')
       toast.success(blocked ? 'Slot bloqueado' : 'Slot desbloqueado')
       return data?.[0]
     } catch (err: any) {
@@ -135,6 +149,8 @@ export function useSchedulingSlotsManagement(tenantId: string | undefined) {
   // ⏱️ RESETAR CONTADOR DE PEDIDOS
   const resetSlotCounter = async (id: string) => {
     try {
+      console.log('🔄 Resetando contador do slot:', { slotId: id })
+      
       const { data, error: updateError } = await (supabase as any)
         .from('scheduling_slots')
         .update({ current_orders: 0 })
@@ -143,6 +159,7 @@ export function useSchedulingSlotsManagement(tenantId: string | undefined) {
 
       if (updateError) throw updateError
       
+      console.log('✅ Contador resetado')
       toast.success('Contador resetado')
       return data?.[0]
     } catch (err: any) {
@@ -169,13 +186,25 @@ export function useSchedulingSlotsManagement(tenantId: string | undefined) {
           filter: `tenant_id=eq.${tenantId}`
         },
         (payload: any) => {
-          console.log('📡 Slot atualizado:', payload.eventType)
+          console.log('📡 [REALTIME-MANAGEMENT] Evento recebido:', {
+            event: payload.eventType,
+            slotId: payload.new?.id || payload.old?.id,
+            time: payload.new?.slot_time || payload.old?.slot_time,
+            currentOrders: payload.new?.current_orders
+          })
           
           if (payload.eventType === 'UPDATE') {
             setSlots(prev =>
-              prev.map(s => s.id === payload.new.id ? payload.new : s)
+              prev.map(s => {
+                if (s.id === payload.new.id) {
+                  console.log('✅ Slot atualizado:', { id: s.id, time: s.slot_time, orders: payload.new.current_orders })
+                  return payload.new
+                }
+                return s
+              })
             )
           } else if (payload.eventType === 'INSERT') {
+            console.log('✅ Novo slot inserido')
             setSlots(prev => 
               [...prev, payload.new].sort((a, b) => {
                 if (a.slot_date !== b.slot_date) {
@@ -185,6 +214,7 @@ export function useSchedulingSlotsManagement(tenantId: string | undefined) {
               })
             )
           } else if (payload.eventType === 'DELETE') {
+            console.log('✅ Slot deletado:', payload.old.id)
             setSlots(prev => prev.filter(s => s.id !== payload.old.id))
           }
         }
