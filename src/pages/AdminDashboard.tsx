@@ -598,6 +598,7 @@ const AdminDashboard = () => {
     
     const statusConfig: Record<string, { label: string; variant: any }> = {
       pending: { label: 'Pendente', variant: 'destructive' },
+      agendado: { label: '📅 Agendado', variant: 'default' },
       confirmed: { label: 'Confirmado', variant: 'outline' },
       preparing: { label: 'Preparando', variant: 'outline' },
       delivering: { label: 'Em Entrega', variant: 'secondary' },
@@ -791,7 +792,16 @@ const AdminDashboard = () => {
                           if (!order?.id) return null;
                           return (
                           <TableRow key={order.id}>
-                            <TableCell className="font-medium">{order.id}</TableCell>
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-2">
+                                <span>{order.id}</span>
+                                {order.isScheduled && order.scheduledFor && (
+                                  <span className="text-lg" title={`Agendado para: ${format(new Date(order.scheduledFor), "dd/MM/yyyy HH:mm", { locale: ptBR })}`}>
+                                    📅
+                                  </span>
+                                )}
+                              </div>
+                            </TableCell>
                             <TableCell>{order.customer?.name || 'N/A'}</TableCell>
                             <TableCell>
                               <div className="flex flex-col gap-1">
