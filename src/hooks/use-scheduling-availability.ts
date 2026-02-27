@@ -22,6 +22,20 @@ export function useSchedulingSlots(tenantId: string | undefined, date?: string) 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // ✅ HELPER: Calcular disponibilidade de um slot
+  const calculateAvailability = (slot: any) => ({
+    ...slot,
+    available_spots: slot.max_orders - slot.current_orders,
+    availability_status: 
+      slot.is_blocked 
+        ? 'blocked'
+        : slot.current_orders >= slot.max_orders 
+          ? 'full'
+          : (slot.max_orders - slot.current_orders) <= 2
+            ? 'almost_full'
+            : 'available'
+  })
+
   useEffect(() => {
     if (!date || !tenantId) {
       setSlots([])
@@ -50,18 +64,7 @@ export function useSchedulingSlots(tenantId: string | undefined, date?: string) 
         console.log('✅ Slots encontrados:', data?.length || 0)
         
         // Calcular disponibilidade no cliente
-        const slotsWithAvailability = (data || []).map((slot: any) => ({
-          ...slot,
-          available_spots: slot.max_orders - slot.current_orders,
-          availability_status: 
-            slot.is_blocked 
-              ? 'blocked'
-              : slot.current_orders >= slot.max_orders 
-                ? 'full'
-                : (slot.max_orders - slot.current_orders) <= 2
-                  ? 'almost_full'
-                  : 'available'
-        }))
+        const slotsWithAvailability = (data || []).map(calculateAvailability)
         
         setSlots(slotsWithAvailability)
       } catch (err: any) {
@@ -88,15 +91,14 @@ export function useSchedulingSlots(tenantId: string | undefined, date?: string) 
         },
         (payload: any) => {
           const newSlot = payload.new as SchedulingSlot
-          console.log('📡 Slot atualizado:', newSlot?.slot_time)
+          console.log('📡 Slot atualizado em tempo real:', newSlot?.slot_time, '| current:', newSlot?.current_orders, '/', newSlot?.max_orders)
           
           if (payload.eventType === 'UPDATE') {
-            const updatedSlot = newSlot
+            // ✅ CORRIGIDO: Recalcular available_spots e availability_status
+            const updatedSlot = calculateAvailability(newSlot)
             setSlots(prev =>
               prev.map(s =>
-                s.id === updatedSlot.id
-                  ? { ...s, ...updatedSlot }
-                  : s
+                s.id === updatedSlot.id ? updatedSlot : s
               )
             )
             
@@ -104,10 +106,15 @@ export function useSchedulingSlots(tenantId: string | undefined, date?: string) 
             const oldSlot = payload.old as SchedulingSlot
             if (oldSlot.current_orders < updatedSlot.max_orders && 
                 updatedSlot.current_orders >= updatedSlot.max_orders) {
-              console.log(`🚫 Slot ${updatedSlot.slot_time} ficou cheio`)
+              console.log(`🚫 Slot ${updatedSlot.slot_time} ficou CHEIO (${updatedSlot.current_orders}/${updatedSlot.max_orders})`)
+            }
+            // Alertar se liberou
+            if (oldSlot.current_orders > updatedSlot.current_orders) {
+              console.log(`✅ Slot ${updatedSlot.slot_time} LIBERADO (${updatedSlot.current_orders}/${updatedSlot.max_orders})`)
             }
           } else if (payload.eventType === 'INSERT') {
-            setSlots(prev => [...prev, newSlot].sort((a, b) =>
+            const slotWithAvailability = calculateAvailability(newSlot)
+            setSlots(prev => [...prev, slotWithAvailability].sort((a, b) =>
               a.slot_time.localeCompare(b.slot_time)
             ))
           } else if (payload.eventType === 'DELETE') {
