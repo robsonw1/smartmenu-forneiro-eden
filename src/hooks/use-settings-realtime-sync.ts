@@ -11,6 +11,7 @@ export function useSettingsRealtimeSync() {
 
   useEffect(() => {
     let isSubscribed = true;
+    let channel: any = null;
 
     const setupRealtimeSync = async () => {
       try {
@@ -22,16 +23,16 @@ export function useSettingsRealtimeSync() {
           .single();
 
         if (error) {
-          console.error('❌ Erro ao carregar settings do Supabase:', error);
+          console.error('❌ [SETTINGS-SYNC] Erro ao carregar settings:', error.message);
           return;
         }
 
         if (data && isSubscribed) {
-          console.log('📥 Configurações carregadas do Supabase:', data);
+          console.log('📥 [SETTINGS-SYNC] Configurações carregadas do Supabase');
 
           // Sincronizar para o store - mapear ALL campos
           const settingsData = data as any;
-          await updateSettings({
+          updateSettings({
             enableScheduling: settingsData.enable_scheduling ?? false,
             minScheduleMinutes: settingsData.min_schedule_minutes ?? 30,
             maxScheduleDays: settingsData.max_schedule_days ?? 7,
@@ -39,7 +40,7 @@ export function useSettingsRealtimeSync() {
           });
         }
       } catch (error) {
-        console.error('❌ Erro ao configurar realtime sync:', error);
+        console.error('❌ [SETTINGS-SYNC] Erro ao configurar realtime:', error);
       }
     };
 
@@ -47,7 +48,7 @@ export function useSettingsRealtimeSync() {
     setupRealtimeSync();
 
     // 2. Inscrever-se a mudanças em TEMPO REAL
-    const channel = supabase
+    channel = supabase
       .channel('settings-realtime-sync')
       .on(
         'postgres_changes',
@@ -60,42 +61,41 @@ export function useSettingsRealtimeSync() {
         async (payload: any) => {
           if (!isSubscribed) return;
 
-          console.log('🔄 REALTIME: Mudança detectada em settings:', payload.new);
+          console.log('🔄 [SETTINGS-SYNC] Mudança detectada em tempo real:', {
+            enableScheduling: payload.new.enable_scheduling,
+            minScheduleMinutes: payload.new.min_schedule_minutes,
+            maxScheduleDays: payload.new.max_schedule_days,
+          });
 
           const newData = payload.new as any;
 
-          // Todas as configurações de scheduling
-          if (
-            newData.enable_scheduling !== undefined ||
-            newData.min_schedule_minutes !== undefined ||
-            newData.max_schedule_days !== undefined ||
-            newData.allow_scheduling_on_closed_days !== undefined
-          ) {
-            await updateSettings({
-              enableScheduling: newData.enable_scheduling ?? false,
-              minScheduleMinutes: newData.min_schedule_minutes ?? 30,
-              maxScheduleDays: newData.max_schedule_days ?? 7,
-              allowSchedulingOnClosedDays: newData.allow_scheduling_on_closed_days ?? false,
-            });
+          // Atualizar o store quando qualquer campo de scheduling mudar
+          updateSettings({
+            enableScheduling: newData.enable_scheduling ?? false,
+            minScheduleMinutes: newData.min_schedule_minutes ?? 30,
+            maxScheduleDays: newData.max_schedule_days ?? 7,
+            allowSchedulingOnClosedDays: newData.allow_scheduling_on_closed_days ?? false,
+          });
 
-            console.log('✅ REALTIME: Settings sincronizadas automaticamente!');
-          }
+          console.log('✅ [SETTINGS-SYNC] Store atualizado em tempo real!');
         }
       )
       .subscribe((status, error) => {
         if (status === 'SUBSCRIBED') {
-          console.log('✅ REALTIME: Sincronização em tempo real ativada para settings');
+          console.log('✅ [SETTINGS-SYNC] Canal realtime ativo');
         } else if (status === 'CLOSED') {
-          console.log('🔴 REALTIME: Sincronização fechada');
+          console.log('🔴 [SETTINGS-SYNC] Canal fechado');
         } else if (error) {
-          console.error('❌ REALTIME: Erro na sincronização:', error);
+          console.error('❌ [SETTINGS-SYNC] Erro no canal:', error);
         }
       });
 
-    // Cleanup
+    // Cleanup - executar apenas ao desmontar
     return () => {
       isSubscribed = false;
-      supabase.removeChannel(channel);
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
     };
-  }, [updateSettings]);
+  }, []); // ✅ Dependências vazias - executa apenas uma vez ao montar
 }
