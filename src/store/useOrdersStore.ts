@@ -433,10 +433,10 @@ export const useOrdersStore = create<OrdersStore>()(
         try {
           // 🔒 CRÍTICO: Atualizar points_redeemed no Supabase IMEDIATAMENTE
           // Isso registra que esses pontos foram "reservados" para esta compra
+          // ⚠️ NÃO atualizar points_discount aqui - já foi calculado e salvo corretamente na criação
           const { error } = await (supabase as any).from('orders')
             .update({ 
-              points_redeemed: pointsRedeemed,
-              points_discount: pointsRedeemed // Atualizar desconto também
+              points_redeemed: pointsRedeemed
             })
             .eq('id', id);
 
@@ -456,8 +456,7 @@ export const useOrdersStore = create<OrdersStore>()(
             order.id === id 
               ? { 
                   ...order, 
-                  pointsRedeemed,
-                  pointsDiscount: pointsRedeemed 
+                  pointsRedeemed
                 } 
               : order
           ),
