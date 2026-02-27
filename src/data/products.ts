@@ -84,7 +84,7 @@ export interface Order {
   pendingPoints?: number;
   couponDiscount?: number;
   appliedCoupon?: string;
-  status: 'pending' | 'confirmed' | 'preparing' | 'delivering' | 'delivered' | 'cancelled';
+  status: 'pending' | 'agendado' | 'confirmed' | 'preparing' | 'delivering' | 'delivered' | 'cancelled';
   observations?: string;
   needsChange?: boolean; // Para pagamento em dinheiro
   changeAmount?: string; // Valor do troco
