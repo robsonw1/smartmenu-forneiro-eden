@@ -193,6 +193,10 @@ export const useOrdersStore = create<OrdersStore>()(
                 slotTime: scheduledTime,
               });
 
+              // ⚠️ TEMPORÁRIO: Desabilitar chamada à Edge Function por problemas de CORS
+              // TODO: Corrigir CORS na Edge Function reserve-scheduling-slot
+              console.log('⏭️ [RESERVA-SLOT] Desabilitada temporariamente (CORS issue). Pedido criado com sucesso.');
+              /*
               const { data: reservationResult, error: reservationError } = await supabase.functions.invoke(
                 'reserve-scheduling-slot',
                 {
@@ -211,6 +215,7 @@ export const useOrdersStore = create<OrdersStore>()(
               } else {
                 console.log('✅ Slot reservado com sucesso:', reservationResult);
               }
+              */
             } catch (err) {
               console.error('❌ Erro ao chamar reserve-scheduling-slot:', err);
               // Não bloquear criação do pedido se reserva falhar
