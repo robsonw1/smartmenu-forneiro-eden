@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 import { Order } from '@/data/products';
 import { supabase } from '@/integrations/supabase/client';
 
-type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'delivering' | 'delivered' | 'cancelled';
+type OrderStatus = 'pending' | 'agendado' | 'confirmed' | 'preparing' | 'delivering' | 'delivered' | 'cancelled';
 
 // Helper para obter hora local em formato ISO string sem timezone
 const getLocalISOString = (): string => {
@@ -128,13 +128,16 @@ export const useOrdersStore = create<OrdersStore>()(
             console.log('🔧 [TIMESTAMP] Normalizado:', { input: newOrder.scheduledFor, output: scheduledForValue });
           }
           
+          // 🆕 Se pedido é agendado, usar status "agendado" em vez de "pending"
+          const statusToUse = (newOrder.isScheduled && scheduledForValue) ? 'agendado' : newOrder.status;
+          
           console.log('📋 [PRE-INSERT] Enviando para Supabase:', {
             id: newOrder.id,
             customer_name: newOrder.customer.name,
             customer_phone: newOrder.customer.phone,
             email: customerEmail,
             delivery_fee: newOrder.deliveryFee,
-            status: newOrder.status,
+            status: statusToUse,
             total: newOrder.total,
             points_discount: newOrder.pointsDiscount || 0,
             points_redeemed: pointsRedeemed,
@@ -154,7 +157,7 @@ export const useOrdersStore = create<OrdersStore>()(
               customer_phone: newOrder.customer.phone,
               email: customerEmail,
               delivery_fee: newOrder.deliveryFee,
-              status: newOrder.status,
+              status: statusToUse,
               total: newOrder.total,
               points_discount: newOrder.pointsDiscount || 0,
               points_redeemed: pointsRedeemed,
@@ -560,6 +563,9 @@ export const useOrdersStore = create<OrdersStore>()(
                     : undefined,
                   // 🤖 Indicador de auto-confirmação via PIX
                   autoConfirmedByPix: row.auto_confirmed_by_pix === true,
+                  // 📅 NOVO: Agendamento de pedido
+                  isScheduled: row.is_scheduled === true,
+                  scheduledFor: row.scheduled_for ? row.scheduled_for : undefined,
                 };
                 
                 return syncedOrder;
