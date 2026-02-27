@@ -46,6 +46,7 @@ export function SchedulingSlotManagementDialog({
 
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [filterDate, setFilterDate] = useState<string>('all')
+  const [actionInProgress, setActionInProgress] = useState<string | null>(null) // Rastrear qual ação está em progresso
   const [newSlot, setNewSlot] = useState({
     slot_date: format(new Date(), 'yyyy-MM-dd'),
     slot_time: '11:00',
@@ -85,6 +86,40 @@ export function SchedulingSlotManagementDialog({
       })
     } catch (err) {
       console.error('Erro ao criar slot:', err)
+    }
+  }
+
+  // ✅ HANDLERS COM CONTROLE DE AÇÃO EM PROGRESSO
+  const handleDeleteSlot = async (slotId: string) => {
+    setActionInProgress(`delete-${slotId}`)
+    try {
+      await deleteSlot(slotId)
+    } catch (err) {
+      console.error('Erro ao deletar:', err)
+    } finally {
+      setActionInProgress(null)
+    }
+  }
+
+  const handleToggleBlockSlot = async (slotId: string, blocked: boolean) => {
+    setActionInProgress(`block-${slotId}`)
+    try {
+      await toggleBlockSlot(slotId, !blocked)
+    } catch (err) {
+      console.error('Erro ao bloquear:', err)
+    } finally {
+      setActionInProgress(null)
+    }
+  }
+
+  const handleResetSlotCounter = async (slotId: string) => {
+    setActionInProgress(`reset-${slotId}`)
+    try {
+      await resetSlotCounter(slotId)
+    } catch (err) {
+      console.error('Erro ao resetar:', err)
+    } finally {
+      setActionInProgress(null)
     }
   }
 
@@ -279,10 +314,13 @@ export function SchedulingSlotManagementDialog({
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => toggleBlockSlot(slot.id, !slot.is_blocked)}
+                            onClick={() => handleToggleBlockSlot(slot.id, slot.is_blocked)}
+                            disabled={actionInProgress !== null}
                             title={slot.is_blocked ? 'Desbloquear' : 'Bloquear'}
                           >
-                            {slot.is_blocked ? (
+                            {actionInProgress === `block-${slot.id}` ? (
+                              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                            ) : slot.is_blocked ? (
                               <Unlock className="w-4 h-4" />
                             ) : (
                               <Lock className="w-4 h-4" />
@@ -292,20 +330,30 @@ export function SchedulingSlotManagementDialog({
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => resetSlotCounter(slot.id)}
+                            onClick={() => handleResetSlotCounter(slot.id)}
+                            disabled={actionInProgress !== null}
                             title="Zerar pedidos"
                           >
-                            <RotateCcw className="w-4 h-4" />
+                            {actionInProgress === `reset-${slot.id}` ? (
+                              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <RotateCcw className="w-4 h-4" />
+                            )}
                           </Button>
 
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => deleteSlot(slot.id)}
+                            onClick={() => handleDeleteSlot(slot.id)}
+                            disabled={actionInProgress !== null}
                             title="Deletar"
                             className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            {actionInProgress === `delete-${slot.id}` ? (
+                              <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
                           </Button>
                         </div>
                       </div>
