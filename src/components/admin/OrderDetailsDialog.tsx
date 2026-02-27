@@ -483,7 +483,7 @@ export function OrderDetailsDialog({ open, onOpenChange, order }: OrderDetailsDi
             )}
             {localOrder.pointsDiscount && localOrder.pointsDiscount > 0 && (
               <div className="flex justify-between text-sm text-green-600 font-medium">
-                <span>Desconto (Pontos)</span>
+                <span>Desconto (Pontos Lealdade: {localOrder.pointsRedeemed})</span>
                 <span>-{formatPrice(localOrder.pointsDiscount)}</span>
               </div>
             )}
