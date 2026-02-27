@@ -406,6 +406,26 @@ export function OrderDetailsDialog({ open, onOpenChange, order }: OrderDetailsDi
 
           <Separator />
 
+          {/* Scheduling Info - Se pedido foi agendado */}
+          {localOrder.isScheduled && localOrder.scheduledFor && (
+            <>
+              <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <h4 className="font-semibold mb-3 flex items-center gap-2 text-blue-900 dark:text-blue-100">
+                  📅 Entrega/Retirada Agendada
+                </h4>
+                <div className="space-y-2">
+                  <div>
+                    <span className="text-muted-foreground text-sm">Data e Hora:</span>
+                    <p className="font-semibold text-blue-900 dark:text-blue-100">
+                      {format(new Date(localOrder.scheduledFor), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <Separator />
+            </>
+          )}
+
           {/* Items */}
           <div>
             <h4 className="font-semibold mb-2">Itens do Pedido</h4>
