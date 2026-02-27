@@ -8,7 +8,6 @@ import { supabase } from '@/integrations/supabase/client';
  */
 export function useSettingsRealtimeSync() {
   const updateSettings = useSettingsStore((s) => s.updateSettings);
-  const syncSettings = useSettingsStore((s) => s.syncSettings); // ✅ Usar syncSettings para realtime
 
   useEffect(() => {
     let isSubscribed = true;
@@ -32,7 +31,7 @@ export function useSettingsRealtimeSync() {
 
           // Sincronizar para o store - mapear ALL campos
           const settingsData = data as any;
-          syncSettings({
+          await updateSettings({
             enableScheduling: settingsData.enable_scheduling ?? false,
             minScheduleMinutes: settingsData.min_schedule_minutes ?? 30,
             maxScheduleDays: settingsData.max_schedule_days ?? 7,
@@ -72,7 +71,7 @@ export function useSettingsRealtimeSync() {
             newData.max_schedule_days !== undefined ||
             newData.allow_scheduling_on_closed_days !== undefined
           ) {
-            syncSettings({
+            await updateSettings({
               enableScheduling: newData.enable_scheduling ?? false,
               minScheduleMinutes: newData.min_schedule_minutes ?? 30,
               maxScheduleDays: newData.max_schedule_days ?? 7,
@@ -98,5 +97,5 @@ export function useSettingsRealtimeSync() {
       isSubscribed = false;
       supabase.removeChannel(channel);
     };
-  }, [syncSettings, updateSettings]);
+  }, [updateSettings]);
 }
