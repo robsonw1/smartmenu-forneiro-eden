@@ -119,6 +119,20 @@ export const useOrdersStore = create<OrdersStore>()(
             }
           }
           
+          // 🔧 Garantir que timestamp esteja no formato correto (YYYY-MM-DDTHH:MM:SS)
+          if (scheduledForValue && !scheduledForValue.includes(':')) {
+            // Se não tiver colons, anexar :00 para hora/minuto/segundo
+            if (scheduledForValue.includes('T')) {
+              scheduledForValue = scheduledForValue + ':00';
+            }
+          } else if (scheduledForValue && scheduledForValue.match(/T\d{2}:\d{2}$/)) {
+            // Se tiver apenas HH:MM, anexar :00
+            scheduledForValue = scheduledForValue + ':00';
+          } else if (scheduledForValue && scheduledForValue.match(/T\d{2}:\d{2}:\d{2}:\d{2}$/)) {
+            // Se tiver HH:MM:SS:SS (duplicado), remover o último
+            scheduledForValue = scheduledForValue.substring(0, scheduledForValue.lastIndexOf(':'));
+          }
+          
           console.log('📋 [PRE-INSERT] Enviando para Supabase:', {
             id: newOrder.id,
             customer_name: newOrder.customer.name,
