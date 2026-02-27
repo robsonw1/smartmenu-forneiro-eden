@@ -174,60 +174,8 @@ export const useRealtimeSync = () => {
       )
       .subscribe();
 
-    // Sincronizar Configurações - Escuta ANY mudança na tabela
-    const settingsChannel = supabase
-      .channel('realtime:settings')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'settings' },
-        async (payload) => {
-          if (!isMounted) return;
-          
-          console.log('⚡ Settings mudou no Supabase:', payload);
-          
-          try {
-            // Recarregar os settings quando qualquer mudança ocorrer
-            const { data: settingsData } = await (supabase as any)
-              .from('settings')
-              .select('*')
-              .eq('id', 'store-settings')
-              .single();
-            
-            if (settingsData && isMounted) {
-              const settingsStore = useSettingsStore.getState();
-              
-              // Se tiver 'value' (JSON), usar ele. Senão usar os campos individuais como fallback
-              const valueData = settingsData.value || {};
-              
-              settingsStore.updateSettings({
-                name: valueData.name || settingsData.store_name || 'Forneiro Éden',
-                phone: valueData.phone || settingsData.store_phone || '(11) 99999-9999',
-                address: valueData.address || settingsData.store_address || 'Rua das Pizzas, 123 - Centro',
-                slogan: valueData.slogan || settingsData.slogan || 'A Pizza mais recheada da cidade 🇮🇹',
-                schedule: valueData.schedule,
-                deliveryTimeMin: valueData.deliveryTimeMin || 60,
-                deliveryTimeMax: valueData.deliveryTimeMax || 70,
-                pickupTimeMin: valueData.pickupTimeMin || 40,
-                pickupTimeMax: valueData.pickupTimeMax || 50,
-                isManuallyOpen: valueData.isManuallyOpen !== undefined ? valueData.isManuallyOpen : true,
-                orderAlertEnabled: valueData.orderAlertEnabled !== undefined ? valueData.orderAlertEnabled : true,
-                sendOrderSummaryToWhatsApp: valueData.sendOrderSummaryToWhatsApp !== undefined ? valueData.sendOrderSummaryToWhatsApp : false,
-                printnode_printer_id: settingsData.printnode_printer_id,
-                print_mode: settingsData.print_mode || 'auto',
-                auto_print_pix: settingsData.auto_print_pix === true,
-                auto_print_card: settingsData.auto_print_card === true,
-                auto_print_cash: settingsData.auto_print_cash === true,
-              });
-              console.log('✅ Settings atualizado em tempo real:', settingsData);
-            }
-          } catch (error) {
-            console.error('❌ Erro ao sincronizar settings:', error);
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log('Settings channel status:', status);
-      });
+    // ⚠️ NOTA: Sincronização de Settings agora é feita exclusivamente em use-settings-realtime-sync.ts
+    // para evitar conflito de canais realtime. Este hook foi removido daqui.
 
     // Cleanup: Desinscrever de todos os canais ao desmontar
     return () => {
@@ -235,7 +183,6 @@ export const useRealtimeSync = () => {
       productsChannel.unsubscribe();
       ordersChannel.unsubscribe();
       neighborhoodsChannel.unsubscribe();
-      settingsChannel.unsubscribe();
     };
   }, []);
 };
