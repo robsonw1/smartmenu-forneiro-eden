@@ -183,45 +183,52 @@ export const useOrdersStore = create<OrdersStore>()(
           }
           console.log('✅ Order inserida com sucesso:', newOrder.id, 'em', localISO, 'com email:', customerEmail, 'pending_points:', pendingPoints, 'tenant_id:', finalTenantId);
 
-          // 🔀 NOVA INTEGRAÇÃO: Reservar slot de agendamento se pedido está agendado
+          // 🔀 NOVA INTEGRAÇÃO: Incrementar current_orders do slot se pedido está agendado
           if (newOrder.isScheduled && scheduledForValue && finalTenantId) {
             try {
               const scheduledDate = scheduledForValue.split('T')[0]; // 'YYYY-MM-DD'
               const scheduledTime = scheduledForValue.split('T')[1]?.substring(0, 5); // 'HH:MM'
               
-              console.log('🔄 Tentando reservar slot:', {
+              console.log('🔄 Incrementando contador do slot:', {
                 orderId: newOrder.id,
                 tenantId: finalTenantId,
                 slotDate: scheduledDate,
                 slotTime: scheduledTime,
               });
 
-              // ⚠️ TEMPORÁRIO: Desabilitar chamada à Edge Function por problemas de CORS
-              // TODO: Corrigir CORS na Edge Function reserve-scheduling-slot
-              console.log('⏭️ [RESERVA-SLOT] Desabilitada temporariamente (CORS issue). Pedido criado com sucesso.');
-              /*
-              const { data: reservationResult, error: reservationError } = await supabase.functions.invoke(
-                'reserve-scheduling-slot',
-                {
-                  body: {
-                    orderId: newOrder.id,
-                    tenantId: finalTenantId,
-                    slotDate: scheduledDate,
-                    slotTime: scheduledTime,
-                  },
-                }
-              );
+              // ✅ CORRIGIDO: Atualizar current_orders diretamente (sem Edge Function - CORS issue)
+              const { data: slot, error: slotError } = await (supabase as any)
+                .from('scheduling_slots')
+                .select('id, current_orders, max_orders')
+                .eq('tenant_id', finalTenantId)
+                .eq('slot_date', scheduledDate)
+                .eq('slot_time', scheduledTime)
+                .maybeSingle();
 
-              if (reservationError) {
-                console.warn('⚠️ Falha ao reservar slot:', reservationError);
-                // Não lançar erro aqui - o pedido foi criado mas o slot pode estar cheio
-              } else {
-                console.log('✅ Slot reservado com sucesso:', reservationResult);
+              if (slotError) {
+                console.warn('⚠️ Erro ao buscar slot:', slotError);
+              } else if (slot) {
+                const newOrderCount = slot.current_orders + 1;
+                
+                // Verificar se não vai exceder kapacidade
+                if (newOrderCount <= slot.max_orders) {
+                  const { error: updateError } = await (supabase as any)
+                    .from('scheduling_slots')
+                    .update({ current_orders: newOrderCount })
+                    .eq('id', slot.id);
+
+                  if (updateError) {
+                    console.warn('⚠️ Erro ao atualizar current_orders:', updateError);
+                  } else {
+                    console.log('✅ Slot reservado: current_orders incrementado para', newOrderCount);
+                  }
+                } else {
+                  console.warn('⚠️ Slot chegou ao limite de pedidos');
+                }
               }
-              */
             } catch (err) {
-              console.error('❌ Erro ao chamar reserve-scheduling-slot:', err);
-              // Não bloquear criação do pedido se reserva falhar
+              console.error('❌ Erro ao atualizar slot:', err);
+              // Não bloquear criação do pedido se atualização falhar
             }
           }
 
@@ -340,11 +347,53 @@ export const useOrdersStore = create<OrdersStore>()(
           
           // Buscar order completo para enviar notificação e reversão de pontos
           const { data: orderData } = await (supabase as any).from('orders')
-            .select('id, customer_name, email, tenant_id, customer_phone, customer_id, pending_points, points_redeemed, address')
+            .select('id, customer_name, email, tenant_id, customer_phone, customer_id, pending_points, points_redeemed, address, is_scheduled, scheduled_for')
             .eq('id', id)
             .single();
 
           console.log(`📦 Order data:`, orderData);
+
+          // 🔄 SE CANCELANDO PEDIDO AGENDADO: Liberar vaga no slot
+          if (status === 'cancelled' && orderData?.is_scheduled && orderData?.scheduled_for && orderData?.tenant_id) {
+            try {
+              const scheduledDate = orderData.scheduled_for.split('T')[0]; // 'YYYY-MM-DD'
+              const scheduledTime = orderData.scheduled_for.split('T')[1]?.substring(0, 5); // 'HH:MM'
+
+              console.log('🔄 Liberando slot do pedido agendado:', {
+                orderId: id,
+                tenantId: orderData.tenant_id,
+                slotDate: scheduledDate,
+                slotTime: scheduledTime,
+              });
+
+              // Buscar slot e decrementar current_orders
+              const { data: slot, error: slotError } = await (supabase as any)
+                .from('scheduling_slots')
+                .select('id, current_orders')
+                .eq('tenant_id', orderData.tenant_id)
+                .eq('slot_date', scheduledDate)
+                .eq('slot_time', scheduledTime)
+                .maybeSingle();
+
+              if (slotError) {
+                console.warn('⚠️ Erro ao buscar slot:', slotError);
+              } else if (slot && slot.current_orders > 0) {
+                const { error: updateError } = await (supabase as any)
+                  .from('scheduling_slots')
+                  .update({ current_orders: slot.current_orders - 1 })
+                  .eq('id', slot.id);
+
+                if (updateError) {
+                  console.warn('⚠️ Erro ao liberar slot:', updateError);
+                } else {
+                  console.log('✅ Slot liberado com sucesso');
+                }
+              }
+            } catch (err) {
+              console.error('❌ Erro ao liberar slot:', err);
+              // Não bloquear cancelamento se liberação falhar
+            }
+          }
 
           // Atualizar no Supabase
           const { error } = await supabase.from('orders')
@@ -433,10 +482,10 @@ export const useOrdersStore = create<OrdersStore>()(
         try {
           // 🔒 CRÍTICO: Atualizar points_redeemed no Supabase IMEDIATAMENTE
           // Isso registra que esses pontos foram "reservados" para esta compra
-          // ⚠️ NÃO atualizar points_discount aqui - já foi calculado e salvo corretamente na criação
           const { error } = await (supabase as any).from('orders')
             .update({ 
-              points_redeemed: pointsRedeemed
+              points_redeemed: pointsRedeemed,
+              points_discount: pointsRedeemed // Atualizar desconto também
             })
             .eq('id', id);
 
@@ -456,7 +505,8 @@ export const useOrdersStore = create<OrdersStore>()(
             order.id === id 
               ? { 
                   ...order, 
-                  pointsRedeemed
+                  pointsRedeemed,
+                  pointsDiscount: pointsRedeemed 
                 } 
               : order
           ),
