@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -44,7 +45,7 @@ export function SchedulingSlotManagementDialog({
   } = useSchedulingSlotsManagement(tenantId)
 
   const [showCreateForm, setShowCreateForm] = useState(false)
-  const [filterDate, setFilterDate] = useState<string>('')
+  const [filterDate, setFilterDate] = useState<string>('all')
   const [newSlot, setNewSlot] = useState({
     slot_date: format(new Date(), 'yyyy-MM-dd'),
     slot_time: '11:00',
@@ -53,7 +54,7 @@ export function SchedulingSlotManagementDialog({
 
   // 📊 Agrupar slots por data
   const slotsByDate = slots.reduce((acc, slot) => {
-    if (!filterDate || slot.slot_date === filterDate) {
+    if (filterDate === 'all' || slot.slot_date === filterDate) {
       if (!acc[slot.slot_date]) acc[slot.slot_date] = []
       acc[slot.slot_date].push(slot)
     }
@@ -106,6 +107,9 @@ export function SchedulingSlotManagementDialog({
             <Calendar className="w-5 h-5" />
             Gerenciar Slots de Agendamento
           </DialogTitle>
+          <DialogDescription>
+            Adicione, bloqueie, desbloqueie ou delete horários de atendimento
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -118,7 +122,7 @@ export function SchedulingSlotManagementDialog({
                   <SelectValue placeholder="Todas as datas" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas as datas</SelectItem>
+                  <SelectItem value="all">Todas as datas</SelectItem>
                   {nextDays.map(date => (
                     <SelectItem key={date} value={date}>
                       {format(new Date(date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
