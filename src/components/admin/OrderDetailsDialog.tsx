@@ -25,10 +25,11 @@ import { toast } from 'sonner';
 import { useState, useEffect } from 'react';
 import { MessageCircle } from 'lucide-react';
 
-type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'delivering' | 'delivered' | 'cancelled';
+type OrderStatus = 'pending' | 'agendado' | 'confirmed' | 'preparing' | 'delivering' | 'delivered' | 'cancelled';
 
 const statusLabels: Record<OrderStatus, string> = {
   pending: 'Pendente',
+  agendado: 'Agendado',
   confirmed: 'Confirmado',
   preparing: 'Preparando',
   delivering: 'Em Entrega',
@@ -38,6 +39,7 @@ const statusLabels: Record<OrderStatus, string> = {
 
 const statusColors: Record<OrderStatus, string> = {
   pending: 'bg-yellow-500',
+  agendado: 'bg-blue-600',
   confirmed: 'bg-blue-500',
   preparing: 'bg-orange-500',
   delivering: 'bg-purple-500',
