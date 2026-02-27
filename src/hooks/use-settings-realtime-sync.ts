@@ -48,12 +48,7 @@ export function useSettingsRealtimeSync() {
 
     // 2. Inscrever-se a mudanças em TEMPO REAL
     const channel = supabase
-      .channel('public:settings:id=eq.store-settings', {
-        config: {
-          broadcast: { self: true },
-          presence: { key: 'settings' },
-        },
-      })
+      .channel('settings-realtime-sync')
       .on(
         'postgres_changes',
         {
