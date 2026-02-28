@@ -15,6 +15,9 @@ type SchedulingForm = {
   minScheduleMinutes: number;
   maxScheduleDays: number;
   allowSchedulingOnClosedDays: boolean;
+  allowSchedulingOutsideBusinessHours: boolean;
+  respectBusinessHoursForScheduling: boolean;
+  allowSameDaySchedulingOutsideHours: boolean;
 };
 
 interface SchedulingSettingsProps {
@@ -23,6 +26,7 @@ interface SchedulingSettingsProps {
 }
 
 export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: SchedulingSettingsProps = {}) {
+  console.log('🚀 [SchedulingSettings] COMPONENTE RENDERIZANDO');
   const { settings, updateSettings } = useSettingsStore();
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -34,6 +38,9 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
     minScheduleMinutes: settings.minScheduleMinutes ?? 30,
     maxScheduleDays: settings.maxScheduleDays ?? 7,
     allowSchedulingOnClosedDays: settings.allowSchedulingOnClosedDays ?? false,
+    allowSchedulingOutsideBusinessHours: settings.allowSchedulingOutsideBusinessHours ?? false,
+    respectBusinessHoursForScheduling: settings.respectBusinessHoursForScheduling ?? true,
+    allowSameDaySchedulingOutsideHours: settings.allowSameDaySchedulingOutsideHours ?? false,
   });
 
   useEffect(() => {
@@ -42,6 +49,15 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
       minScheduleMinutes: settings.minScheduleMinutes ?? 30,
       maxScheduleDays: settings.maxScheduleDays ?? 7,
       allowSchedulingOnClosedDays: settings.allowSchedulingOnClosedDays ?? false,
+      allowSchedulingOutsideBusinessHours: settings.allowSchedulingOutsideBusinessHours ?? false,
+      respectBusinessHoursForScheduling: settings.respectBusinessHoursForScheduling ?? true,
+      allowSameDaySchedulingOutsideHours: settings.allowSameDaySchedulingOutsideHours ?? false,
+    });
+    console.log('✅ [SchedulingSettings] Form atualizado com settings:', {
+      enableScheduling: settings.enableScheduling,
+      allowSchedulingOutsideBusinessHours: settings.allowSchedulingOutsideBusinessHours,
+      respectBusinessHoursForScheduling: settings.respectBusinessHoursForScheduling,
+      allowSameDaySchedulingOutsideHours: settings.allowSameDaySchedulingOutsideHours,
     });
     setHasChanges(false);
   }, [settings]);
@@ -71,7 +87,7 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
     }
   }, []);
 
-  const handleToggleChange = (field: keyof Pick<SchedulingForm, 'enableScheduling' | 'allowSchedulingOnClosedDays'>, value: boolean) => {
+  const handleToggleChange = (field: keyof Pick<SchedulingForm, 'enableScheduling' | 'allowSchedulingOnClosedDays' | 'allowSchedulingOutsideBusinessHours' | 'respectBusinessHoursForScheduling' | 'allowSameDaySchedulingOutsideHours'>, value: boolean) => {
     setForm(prev => ({ ...prev, [field]: value }));
     setHasChanges(true);
   };
@@ -106,6 +122,13 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
         minScheduleMinutes: form.minScheduleMinutes,
         maxScheduleDays: form.maxScheduleDays,
         allowSchedulingOnClosedDays: form.allowSchedulingOnClosedDays,
+        allowSchedulingOutsideBusinessHours: form.allowSchedulingOutsideBusinessHours,
+        respectBusinessHoursForScheduling: form.respectBusinessHoursForScheduling,
+        allowSameDaySchedulingOutsideHours: form.allowSameDaySchedulingOutsideHours,
+      });
+
+      console.log('💾 [SchedulingSettings] Salvo com sucesso:', {
+        allowSchedulingOutsideBusinessHours: form.allowSchedulingOutsideBusinessHours,
       });
 
       setHasChanges(false);
@@ -245,6 +268,113 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
                 <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '6px' }}>
                   💡 Quantos dias no futuro o cliente pode agendar um pedido (0 = mesmo dia apenas)
                 </p>
+              </div>
+
+              <div style={{ height: '1px', backgroundColor: '#e5e7eb' }} />
+
+              {/* Allow Scheduling on Closed Days */}
+              <div className="space-y-3">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: '#fef3c7', borderRadius: '8px', borderColor: '#fcd34d', borderWidth: '1px' }}>
+                  <div className="space-y-1">
+                    <Label style={{ fontWeight: '600', color: '#000000', fontSize: '15px' }}>
+                      📅 Permitir Agendamento em Dias Bloqueados
+                    </Label>
+                    <p style={{ fontSize: '12px', color: '#6b7280' }}>
+                      {form.allowSchedulingOnClosedDays 
+                        ? '✓ Clientes podem agendar em dias que você marcou como bloqueados' 
+                        : '✗ Clientes NÃO podem agendar em dias bloqueados'}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={form.allowSchedulingOnClosedDays}
+                    onCheckedChange={(value) => handleToggleChange('allowSchedulingOnClosedDays', value)}
+                    className="ml-4 scale-125"
+                  />
+                </div>
+              </div>
+
+              <div style={{ height: '1px', backgroundColor: '#e5e7eb' }} />
+
+              {/* Allow Scheduling Outside Business Hours */}
+              <div className="space-y-3">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: '#fce7f3', borderRadius: '8px', borderColor: '#fbcfe8', borderWidth: '1px' }}>
+                  <div className="space-y-1">
+                    <Label style={{ fontWeight: '600', color: '#000000', fontSize: '15px' }}>
+                      🕐 Permitir Agendamento Fora do Horário
+                    </Label>
+                    <p style={{ fontSize: '12px', color: '#6b7280' }}>
+                      {form.allowSchedulingOutsideBusinessHours
+                        ? '✓ Clientes podem agendar mesmo quando a loja está fechada'
+                        : '✗ Clientes NÃO podem agendar quando a loja está fechada'}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={form.allowSchedulingOutsideBusinessHours}
+                    onCheckedChange={(value) => {
+                      console.log('🔄 [Toggle] Alterando allowSchedulingOutsideBusinessHours para:', value);
+                      handleToggleChange('allowSchedulingOutsideBusinessHours', value);
+                    }}
+                    className="ml-4 scale-125"
+                  />
+                </div>
+              </div>
+
+              <div style={{ height: '1px', backgroundColor: '#e5e7eb' }} />
+
+              {/* Respect Business Hours for Scheduling Display */}
+              <div className="space-y-3">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: '#dbeafe', borderRadius: '8px', borderColor: '#bfdbfe', borderWidth: '1px' }}>
+                  <div className="space-y-1">
+                    <Label style={{ fontWeight: '600', color: '#000000', fontSize: '15px' }}>
+                      ⏰ Respeitar Horário de Funcionamento na Seleção
+                    </Label>
+                    <p style={{ fontSize: '12px', color: '#6b7280' }}>
+                      {form.respectBusinessHoursForScheduling
+                        ? '✓ Apenas horários dentro do funcionamento aparecem'
+                        : '✗ Todos os horários aparecem (cliente pode agendar 24/7)'}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={form.respectBusinessHoursForScheduling}
+                    onCheckedChange={(value) => {
+                      console.log('🔄 [Toggle] Alterando respectBusinessHoursForScheduling para:', value);
+                      handleToggleChange('respectBusinessHoursForScheduling', value);
+                    }}
+                    className="ml-4 scale-125"
+                  />
+                </div>
+                <div style={{ fontSize: '12px', backgroundColor: '#eff6ff', color: '#1e40af', padding: '12px', borderRadius: '6px', borderLeft: '4px solid #3b82f6' }}>
+                  💡 <strong>O que é:</strong> Controla se o cliente vê apenas slots dentro do seu horário de funcionamento (definido em "Horário de Funcionamento")
+                </div>
+              </div>
+
+              <div style={{ height: '1px', backgroundColor: '#e5e7eb' }} />
+
+              {/* Allow Same Day Scheduling Outside Hours */}
+              <div className="space-y-3">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: '#f3e8ff', borderRadius: '8px', borderColor: '#e9d5ff', borderWidth: '1px' }}>
+                  <div className="space-y-1">
+                    <Label style={{ fontWeight: '600', color: '#000000', fontSize: '15px' }}>
+                      📅 Permitir Agendamento Hoje Fora do Horário
+                    </Label>
+                    <p style={{ fontSize: '12px', color: '#6b7280' }}>
+                      {form.allowSameDaySchedulingOutsideHours
+                        ? '✓ Cliente consegue agendar para HOJE mesmo se loja está fechada AGORA'
+                        : '✗ Cliente NÃO consegue agendar para hoje se loja está fechada AGORA'}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={form.allowSameDaySchedulingOutsideHours}
+                    onCheckedChange={(value) => {
+                      console.log('🔄 [Toggle] Alterando allowSameDaySchedulingOutsideHours para:', value);
+                      handleToggleChange('allowSameDaySchedulingOutsideHours', value);
+                    }}
+                    className="ml-4 scale-125"
+                  />
+                </div>
+                <div style={{ fontSize: '12px', backgroundColor: '#fdf2f8', color: '#be185d', padding: '12px', borderRadius: '6px', borderLeft: '4px solid #ec4899' }}>
+                  💡 <strong>Exemplo:</strong> São 21:30 (loja fechada) - Se ATIVADO: cliente consegue agendar para hoje 22:30. Se DESATIVADO: cliente recebe aviso e não consegue agendar.
+                </div>
               </div>
             </CardContent>
           </Card>
