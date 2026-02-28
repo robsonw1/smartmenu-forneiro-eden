@@ -994,8 +994,9 @@ export function SchedulingCheckoutModal() {
   };
 
   const handleSubmitOrder = async () => {
-    if (!storeOpen) {
-      toast.error('Estabelecimento fechado. Não é possível fazer pedidos no momento.');
+    // 🔒 VALIDAÇÃO: Verificar se loja está aberta OU se permite agendamento fora do horário
+    if (!storeOpen && !settings.allowSchedulingOutsideBusinessHours) {
+      toast.error('Estabelecimento fechado. Agendamento fora do horário não permitido.');
       return;
     }
     if (!validateStep('payment')) return;
@@ -1437,12 +1438,21 @@ export function SchedulingCheckoutModal() {
             </DialogHeader>
 
             {/* Store Closed Alert */}
-            {!storeOpen && step !== 'confirmation' && (
+            {!storeOpen && step !== 'confirmation' && !settings.allowSchedulingOutsideBusinessHours && (
               <Alert variant="destructive" className="mt-4">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>Estabelecimento fechado.</strong> Não é possível fazer pedidos no momento. 
+                  <strong>Estabelecimento fechado.</strong> Agendamento fora do horário não está permitido.
                   Consulte nosso horário de funcionamento.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {!storeOpen && step !== 'confirmation' && settings.allowSchedulingOutsideBusinessHours && (
+              <Alert className="mt-4" style={{ backgroundColor: '#fef08a', borderColor: '#facc15', color: '#92400e' }}>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>⏰ Estabelecimento fechado,</strong> mas você pode agendar um pedido para quando abrir!
                 </AlertDescription>
               </Alert>
             )}
@@ -2324,3 +2334,4 @@ export function SchedulingCheckoutModal() {
     </>
   );
 }
+
