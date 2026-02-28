@@ -46,6 +46,10 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
       allowSchedulingOnClosedDays: settings.allowSchedulingOnClosedDays ?? false,
       allowSchedulingOutsideBusinessHours: settings.allowSchedulingOutsideBusinessHours ?? false,
     });
+    console.log('✅ [SchedulingSettings] Form atualizado com settings:', {
+      enableScheduling: settings.enableScheduling,
+      allowSchedulingOutsideBusinessHours: settings.allowSchedulingOutsideBusinessHours,
+    });
     setHasChanges(false);
   }, [settings]);
 
@@ -109,6 +113,10 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
         minScheduleMinutes: form.minScheduleMinutes,
         maxScheduleDays: form.maxScheduleDays,
         allowSchedulingOnClosedDays: form.allowSchedulingOnClosedDays,
+        allowSchedulingOutsideBusinessHours: form.allowSchedulingOutsideBusinessHours,
+      });
+
+      console.log('💾 [SchedulingSettings] Salvo com sucesso:', {
         allowSchedulingOutsideBusinessHours: form.allowSchedulingOutsideBusinessHours,
       });
 
@@ -291,7 +299,10 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
                   </div>
                   <Switch
                     checked={form.allowSchedulingOutsideBusinessHours}
-                    onCheckedChange={(value) => handleToggleChange('allowSchedulingOutsideBusinessHours', value)}
+                    onCheckedChange={(value) => {
+                      console.log('🔄 [Toggle] Alterando allowSchedulingOutsideBusinessHours para:', value);
+                      handleToggleChange('allowSchedulingOutsideBusinessHours', value);
+                    }}
                     className="ml-4 scale-125"
                   />
                 </div>
