@@ -131,6 +131,34 @@ export const useOrdersStore = create<OrdersStore>()(
           // 🆕 Se pedido é agendado, usar status "agendado" em vez de "pending"
           const statusToUse = (newOrder.isScheduled && scheduledForValue) ? 'agendado' : newOrder.status;
           
+          // 🔒 VALIDAÇÃO SERVIDOR: Se agendado, verificar se data está dentro do limite permitido
+          if (newOrder.isScheduled && scheduledForValue) {
+            const scheduledDate = scheduledForValue.split('T')[0]; // 'YYYY-MM-DD'
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const selectedDateObj = new Date(`${scheduledDate}T00:00`);
+            const daysDifference = Math.floor((selectedDateObj.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            
+            // Buscar maxScheduleDays da configuração do tenant
+            const { data: settingsData } = await (supabase as any)
+              .from('settings')
+              .select('max_schedule_days')
+              .eq('id', 'store-settings')
+              .single();
+            
+            const maxScheduleDays = settingsData?.max_schedule_days ?? 7;
+            
+            if (daysDifference > maxScheduleDays) {
+              console.error('🚨 [SECURITY] Tentativa de agendar além do limite:', {
+                orderId: newOrder.id,
+                scheduledDate,
+                daysDifference,
+                maxScheduleDays
+              });
+              throw new Error(`❌ Data inválida! Você só pode agendar com até ${maxScheduleDays} dia${maxScheduleDays !== 1 ? 's' : ''} de antecedência`);
+            }
+          }
+          
           console.log('📋 [PRE-INSERT] Enviando para Supabase:', {
             id: newOrder.id,
             customer_name: newOrder.customer.name,
