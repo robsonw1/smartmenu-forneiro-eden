@@ -1417,7 +1417,20 @@ export function SchedulingCheckoutModal() {
   const maxScheduleDays = settings.maxScheduleDays ?? 7; // Fallback para 7 se não configurado
   const maxDate = new Date(Date.now() + maxScheduleDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
+  // ✅ Calcular status da loja
   const storeOpen = isStoreOpen();
+
+  // ✅ Helper: Verificar se agendamento é para hoje
+  const isScheduledForToday = scheduledDate === minDate;
+
+  // ✅ Lógica de aviso: Mostrar apenas se:
+  // 1. Loja está fechada AGORA
+  // 2. allowSchedulingOutsideBusinessHours está DESATIVADO
+  // 3. OU se é para hoje E allowSameDaySchedulingOutsideHours está DESATIVADO
+  const shouldShowStoreClosedAlert = !storeOpen && 
+    step !== 'confirmation' && 
+    !settings.allowSchedulingOutsideBusinessHours &&
+    !(step === 'scheduling' && isScheduledForToday && settings.allowSameDaySchedulingOutsideHours);
   const visibleSteps = getVisibleSteps(deliveryType);
 
   return (
@@ -1438,7 +1451,7 @@ export function SchedulingCheckoutModal() {
             </DialogHeader>
 
             {/* Store Closed Alert */}
-            {!storeOpen && step !== 'confirmation' && !settings.allowSchedulingOutsideBusinessHours && (
+            {shouldShowStoreClosedAlert && (
               <Alert variant="destructive" className="mt-4">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
@@ -1787,8 +1800,10 @@ export function SchedulingCheckoutModal() {
                           selectedTime={scheduledTime}
                           onTimeChange={setScheduledTime}
                           minDate={minDate}
-                        maxDate={maxDate}
-                      />
+                          maxDate={maxDate}
+                          weekSchedule={settings.schedule}
+                          respectBusinessHours={settings.respectBusinessHoursForScheduling}
+                        />
                       </>
                     )}
 
@@ -2334,4 +2349,3 @@ export function SchedulingCheckoutModal() {
     </>
   );
 }
-
