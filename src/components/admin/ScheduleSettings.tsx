@@ -5,7 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
+import { supabase } from '@/integrations/supabase/client';
 import { useSettingsStore } from '@/store/useSettingsStore';
+import { SchedulingSlotManagementDialog } from './SchedulingSlotManagementDialog';
 import { toast } from 'sonner';
 
 type SchedulingForm = {
@@ -13,6 +15,7 @@ type SchedulingForm = {
   minScheduleMinutes: number;
   maxScheduleDays: number;
   allowSchedulingOnClosedDays: boolean;
+  allowSchedulingOutsideBusinessHours: boolean;
 };
 
 interface SchedulingSettingsProps {
@@ -24,11 +27,15 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
   const { settings, updateSettings } = useSettingsStore();
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [showSlotsDialog, setShowSlotsDialog] = useState(false);
+  const [tenantId, setTenantId] = useState<string>('');
+  
   const [form, setForm] = useState<SchedulingForm>({
     enableScheduling: settings.enableScheduling ?? false,
     minScheduleMinutes: settings.minScheduleMinutes ?? 30,
     maxScheduleDays: settings.maxScheduleDays ?? 7,
     allowSchedulingOnClosedDays: settings.allowSchedulingOnClosedDays ?? false,
+    allowSchedulingOutsideBusinessHours: settings.allowSchedulingOutsideBusinessHours ?? false,
   });
 
   useEffect(() => {
@@ -37,11 +44,37 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
       minScheduleMinutes: settings.minScheduleMinutes ?? 30,
       maxScheduleDays: settings.maxScheduleDays ?? 7,
       allowSchedulingOnClosedDays: settings.allowSchedulingOnClosedDays ?? false,
+      allowSchedulingOutsideBusinessHours: settings.allowSchedulingOutsideBusinessHours ?? false,
     });
     setHasChanges(false);
   }, [settings]);
 
-  const handleToggleChange = (field: keyof Pick<SchedulingForm, 'enableScheduling' | 'allowSchedulingOnClosedDays'>, value: boolean) => {
+  // 🔑 RECUPERAR TENANT ID
+  useEffect(() => {
+    const storedTenantId = sessionStorage.getItem('oauth_tenant_id');
+    if (storedTenantId) {
+      setTenantId(storedTenantId);
+    } else {
+      // Fallback: tentar buscar do banco
+      const fetchTenantId = async () => {
+        try {
+          const { data } = await (supabase as any)
+            .from('tenants')
+            .select('id')
+            .limit(1);
+          if (data?.length > 0) {
+            setTenantId(data[0].id);
+            sessionStorage.setItem('oauth_tenant_id', data[0].id);
+          }
+        } catch (err) {
+          console.error('Erro ao recuperar tenant:', err);
+        }
+      };
+      fetchTenantId();
+    }
+  }, []);
+
+  const handleToggleChange = (field: keyof Pick<SchedulingForm, 'enableScheduling' | 'allowSchedulingOnClosedDays' | 'allowSchedulingOutsideBusinessHours'>, value: boolean) => {
     setForm(prev => ({ ...prev, [field]: value }));
     setHasChanges(true);
   };
@@ -62,8 +95,8 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
         return;
       }
 
-      if (form.maxScheduleDays < 1) {
-        toast.error('Máximo de dias deve ser pelo menos 1');
+      if (form.maxScheduleDays < 0) {
+        toast.error('Máximo de dias não pode ser negativo');
         return;
       }
 
@@ -76,6 +109,7 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
         minScheduleMinutes: form.minScheduleMinutes,
         maxScheduleDays: form.maxScheduleDays,
         allowSchedulingOnClosedDays: form.allowSchedulingOnClosedDays,
+        allowSchedulingOutsideBusinessHours: form.allowSchedulingOutsideBusinessHours,
       });
 
       setHasChanges(false);
@@ -94,45 +128,77 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
       <div className="flex items-center gap-2">
         <Clock style={{ color: '#16a34a' }} className="w-6 h-6" />
         <div>
-          <h2 style={{ color: '#111827', fontSize: '24px', fontWeight: 'bold' }}>Configurações de Agendamento</h2>
-          <p style={{ color: '#4b5563', fontSize: '14px' }}>Gerencie as opções de agendamento de pedidos</p>
+          <h2 style={{ color: '#111827', fontSize: '24px', fontWeight: 'bold' }}>Agendamento de Pedidos</h2>
+          <p style={{ color: '#4b5563', fontSize: '14px' }}>Configure e gerencie os horários disponíveis para agendamento</p>
         </div>
       </div>
 
-      {/* Main Settings Card */}
-      <Card style={{ backgroundColor: '#FFFFFF', borderColor: '#dcfce7' }}>
-        <CardHeader style={{ backgroundColor: '#f0fdf4', borderBottomColor: '#dcfce7', borderBottomWidth: '1px' }}>
-          <CardTitle style={{ color: '#166534' }}>Agendamento de Pedidos</CardTitle>
-          <CardDescription style={{ color: '#22863a' }}>Ative ou desative o recurso de agendamento para seus clientes</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6" style={{ backgroundColor: '#FFFFFF' }}>
-          {/* Enable Scheduling Toggle */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', backgroundColor: '#f0fdf4', borderRadius: '8px', borderColor: '#dcfce7', borderWidth: '1px' }}>
-            <div className="space-y-1">
-              <Label style={{ fontSize: '16px', fontWeight: '600', color: '#000000' }}>Ativar Agendamento</Label>
-              <p style={{ fontSize: '14px', color: '#374151' }}>Permite que clientes agendem pedidos para datas e horários futuros</p>
+      {/* Main Toggle Card */}
+      <Card style={{ backgroundColor: '#FFFFFF', borderColor: '#dcfce7', borderWidth: '2px' }}>
+        <CardContent className="pt-6">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px', backgroundColor: '#f0fdf4', borderRadius: '12px', borderColor: '#bbf7d0', borderWidth: '2px' }}>
+            <div className="space-y-2">
+              <Label style={{ fontSize: '18px', fontWeight: '700', color: '#000000' }}>Estado do Agendamento</Label>
+              <p style={{ fontSize: '14px', color: '#4b5563' }}>
+                {form.enableScheduling 
+                  ? '✓ Agendamento ATIVO - Clientes podem agendar pedidos' 
+                  : '✗ Agendamento DESATIVO - Clientes NÃO podem agendar'}
+              </p>
             </div>
             <Switch
               checked={form.enableScheduling}
               onCheckedChange={(value) => handleToggleChange('enableScheduling', value)}
-              className="ml-4"
+              className="ml-4 scale-125"
             />
           </div>
+        </CardContent>
+      </Card>
 
-          {/* Settings - Only show if enabled */}
-          {form.enableScheduling && (
-            <div className="space-y-6" style={{ padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px', borderColor: '#e5e7eb', borderWidth: '1px' }}>
+      {/* If Enabled - Show Management Interface */}
+      {form.enableScheduling && (
+        <>
+          {/* Quick Actions Card */}
+          <Card style={{ backgroundColor: '#FFFFFF', borderColor: '#bfdbfe' }}>
+            <CardHeader style={{ backgroundColor: '#eff6ff', borderBottomColor: '#bfdbfe', borderBottomWidth: '1px' }}>
+              <CardTitle style={{ color: '#1e40af', fontSize: '18px' }}>Gerenciar Horários Disponíveis</CardTitle>
+              <CardDescription style={{ color: '#1e3a8a' }}>Adicione, bloqueie ou edite os horários de atendimento</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+              <div style={{ padding: '16px', backgroundColor: '#f0f9ff', borderRadius: '8px', borderColor: '#e0f2fe', borderWidth: '1px' }}>
+                <p style={{ fontSize: '14px', color: '#0c4a6e', marginBottom: '12px' }}>
+                  📅 <strong>Funcionalidade central:</strong> Customize completamente os dias e horários disponíveis para seus clientes
+                </p>
+                <Button
+                  onClick={() => setShowSlotsDialog(true)}
+                  className="w-full"
+                  style={{ backgroundColor: '#16a34a', color: '#ffffff', height: '44px', fontSize: '16px', fontWeight: '600' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#15803d'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#16a34a'}
+                >
+                  📅 Gerenciar Horários
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Settings Grid */}
+          <Card style={{ backgroundColor: '#FFFFFF', borderColor: '#fce7f3' }}>
+            <CardHeader style={{ backgroundColor: '#fdf2f8', borderBottomColor: '#fce7f3', borderBottomWidth: '1px' }}>
+              <CardTitle style={{ color: '#be185d', fontSize: '18px' }}>Configurações Globais</CardTitle>
+              <CardDescription style={{ color: '#831843' }}>Parâmetros de validação para todos os pedidos agendados</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
               {/* Min Schedule Minutes */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Label htmlFor="minScheduleMinutes" style={{ fontWeight: '600', color: '#000000' }}>
-                    Tempo Mínimo de Antecedência
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label style={{ fontWeight: '600', color: '#000000', fontSize: '15px' }}>
+                    ⏱️ Tempo Mínimo de Antecedência
                   </Label>
-                  <span style={{ fontSize: '12px', backgroundColor: '#fef3c7', color: '#92400e', padding: '4px 8px', borderRadius: '4px', fontWeight: '500' }}>
-                    Recomendado: 30-120 minutos
+                  <span style={{ fontSize: '11px', backgroundColor: '#fef3c7', color: '#92400e', padding: '4px 10px', borderRadius: '4px', fontWeight: '600' }}>
+                    Recomendado: 60-120 min
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   <Input
                     id="minScheduleMinutes"
                     type="number"
@@ -140,137 +206,155 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
                     max="1440"
                     value={form.minScheduleMinutes}
                     onChange={(e) => handleNumberChange('minScheduleMinutes', e.target.value)}
-                    className="w-32"
-                    style={{ borderColor: '#d1d5db', color: '#111827' }}
+                    className="w-24"
+                    style={{ borderColor: '#d1d5db', color: '#111827', height: '40px', fontSize: '14px', fontWeight: '600' }}
                   />
-                  <span style={{ fontSize: '14px', color: '#111827', fontWeight: '500' }}>minutos</span>
+                  <span style={{ fontSize: '14px', color: '#4b5563', fontWeight: '500' }}>minutos</span>
                   {form.minScheduleMinutes >= 60 && (
-                    <span style={{ fontSize: '12px', color: '#6b7280' }}>
+                    <span style={{ fontSize: '13px', color: '#6b7280', backgroundColor: '#f3f4f6', padding: '4px 8px', borderRadius: '4px' }}>
                       ({Math.floor(form.minScheduleMinutes / 60)}h {form.minScheduleMinutes % 60}min)
                     </span>
                   )}
                 </div>
-                <p style={{ fontSize: '12px', color: '#6b7280' }}>
-                  Clientes não poderão agendar com menos de {form.minScheduleMinutes} minutos de antecedência
+                <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '6px' }}>
+                  💡 Tempo mínimo que o cliente precisa esperar antes de poder agendar um pedido
                 </p>
               </div>
 
+              <div style={{ height: '1px', backgroundColor: '#e5e7eb' }} />
+
               {/* Max Schedule Days */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Label htmlFor="maxScheduleDays" style={{ fontWeight: '600', color: '#000000' }}>
-                    Máximo de Dias de Antecedência
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label style={{ fontWeight: '600', color: '#000000', fontSize: '15px' }}>
+                    📅 Máximo de Dias de Antecedência
                   </Label>
-                  <span style={{ fontSize: '12px', backgroundColor: '#dcfce7', color: '#166534', padding: '4px 8px', borderRadius: '4px', fontWeight: '500' }}>
-                    Recomendado: 7-30 dias
+                  <span style={{ fontSize: '11px', backgroundColor: '#dcfce7', color: '#166534', padding: '4px 10px', borderRadius: '4px', fontWeight: '600' }}>
+                    Recomendado: 0-14 dias
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   <Input
                     id="maxScheduleDays"
                     type="number"
-                    min="1"
+                    min="0"
                     max="365"
                     value={form.maxScheduleDays}
                     onChange={(e) => handleNumberChange('maxScheduleDays', e.target.value)}
-                    className="w-32"
-                    style={{ borderColor: '#d1d5db', color: '#111827' }}
+                    className="w-24"
+                    style={{ borderColor: '#d1d5db', color: '#111827', height: '40px', fontSize: '14px', fontWeight: '600' }}
                   />
-                  <span style={{ fontSize: '14px', color: '#111827', fontWeight: '500' }}>dias</span>
+                  <span style={{ fontSize: '14px', color: '#4b5563', fontWeight: '500' }}>dias</span>
                 </div>
-                <p style={{ fontSize: '12px', color: '#6b7280' }}>
-                  Clientes poderão agendar até {form.maxScheduleDays} dia(s) no futuro
+                <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '6px' }}>
+                  💡 Quantos dias no futuro o cliente pode agendar um pedido (0 = mesmo dia apenas)
                 </p>
               </div>
+
+              <div style={{ height: '1px', backgroundColor: '#e5e7eb' }} />
 
               {/* Allow Scheduling on Closed Days */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: '#fef3c7', borderRadius: '6px', borderColor: '#fcd34d', borderWidth: '1px' }}>
-                <div className="space-y-1">
-                  <Label style={{ fontWeight: '600', color: '#000000' }}>Permitir Agendamento em Dias Fechados</Label>
-                  <p style={{ fontSize: '12px', color: '#374151' }}>
-                    Se desativado, clientes não podem agendar para dias em que a loja está fechada
-                  </p>
+              <div className="space-y-3">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: '#fef3c7', borderRadius: '8px', borderColor: '#fcd34d', borderWidth: '1px' }}>
+                  <div className="space-y-1">
+                    <Label style={{ fontWeight: '600', color: '#000000', fontSize: '15px' }}>
+                      📅 Permitir Agendamento em Dias Bloqueados
+                    </Label>
+                    <p style={{ fontSize: '12px', color: '#6b7280' }}>
+                      {form.allowSchedulingOnClosedDays 
+                        ? '✓ Clientes podem agendar em dias que você marcou como bloqueados' 
+                        : '✗ Clientes NÃO podem agendar em dias bloqueados'}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={form.allowSchedulingOnClosedDays}
+                    onCheckedChange={(value) => handleToggleChange('allowSchedulingOnClosedDays', value)}
+                    className="ml-4 scale-125"
+                  />
                 </div>
-                <Switch
-                  checked={form.allowSchedulingOnClosedDays}
-                  onCheckedChange={(value) => handleToggleChange('allowSchedulingOnClosedDays', value)}
-                  className="ml-4"
-                />
               </div>
 
-              {/* Info Box */}
-              <div style={{ padding: '12px', backgroundColor: '#dbeafe', borderColor: '#bfdbfe', borderWidth: '1px', borderRadius: '8px', color: '#111827', fontSize: '14px' }}>
-                <p style={{ fontWeight: '500' }}>
-                  <strong>💡 Dica:</strong> Para uma pizzaria típica, recomendamos:
-                  <br />• Tempo mínimo: 60-120 minutos (para preparação)
-                  <br />• Dias máximos: 7-15 dias (para gestão de demanda)
-                  <br />• Desativar agendamento em dias fechados (a menos que ofereça combo weekend)
-                </p>
-              </div>
-            </div>
-          )}
+              <div style={{ height: '1px', backgroundColor: '#e5e7eb' }} />
 
-          {/* Disabled State Message */}
-          {!form.enableScheduling && (
-            <div style={{ padding: '16px', backgroundColor: '#f3f4f6', borderRadius: '8px', borderColor: '#d1d5db', borderWidth: '1px', textAlign: 'center' }}>
-              <p style={{ fontWeight: '500', color: '#374151' }}>
-                <strong>Agendamento desativado</strong> - Ative o toggle acima para configurar as opções
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              {/* Allow Scheduling Outside Business Hours */}
+              <div className="space-y-3">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: '#fce7f3', borderRadius: '8px', borderColor: '#fbcfe8', borderWidth: '1px' }}>
+                  <div className="space-y-1">
+                    <Label style={{ fontWeight: '600', color: '#000000', fontSize: '15px' }}>
+                      🕐 Permitir Agendamento Fora do Horário
+                    </Label>
+                    <p style={{ fontSize: '12px', color: '#6b7280' }}>
+                      {form.allowSchedulingOutsideBusinessHours
+                        ? '✓ Clientes podem agendar mesmo quando a loja está fechada'
+                        : '✗ Clientes NÃO podem agendar quando a loja está fechada'}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={form.allowSchedulingOutsideBusinessHours}
+                    onCheckedChange={(value) => handleToggleChange('allowSchedulingOutsideBusinessHours', value)}
+                    className="ml-4 scale-125"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Info Card */}
+          <div style={{ padding: '16px', backgroundColor: '#dbeafe', borderRadius: '8px', borderColor: '#bfdbfe', borderWidth: '1px', color: '#111827' }}>
+            <p style={{ fontSize: '14px', fontWeight: '500', lineHeight: '1.6' }}>
+              <strong>💡 Dicas para Configuração:</strong>
+              <br />
+              • Para pizzaria: tempo mínimo <strong>60-120 minutos</strong> (preparação e entrega)
+              <br />
+              • Máximo de <strong>0 dias</strong> = agendamento no mesmo dia apenas
+              <br />
+              • Máximo de <strong>7-14 dias</strong> permite boa gestão de demanda
+              <br />
+              • Use <strong>"Gerenciar Horários"</strong> para bloquear datas específicas
+            </p>
+          </div>
+        </>
+      )}
+
+      {/* If Disabled - Show Info */}
+      {!form.enableScheduling && (
+        <div style={{ padding: '20px', backgroundColor: '#f3f4f6', borderRadius: '8px', borderColor: '#d1d5db', borderWidth: '1px', textAlign: 'center' }}>
+          <p style={{ fontWeight: '500', color: '#374151', fontSize: '15px' }}>
+            🔒 <strong>Agendamento desativado</strong> - Ative o toggle acima para começar
+          </p>
+        </div>
+      )}
 
       {/* Save Button */}
-      <div className="flex gap-3 pt-4">
+      <div className="flex gap-3 pt-2">
         <Button
           onClick={handleSave}
           disabled={!hasChanges || isSaving}
-          style={{ backgroundColor: '#16a34a', color: '#ffffff' }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#15803d'}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#16a34a'}
+          style={{ 
+            backgroundColor: hasChanges ? '#16a34a' : '#d1d5db',
+            color: '#ffffff',
+            height: '44px',
+            fontSize: '15px',
+            fontWeight: '600'
+          }}
+          onMouseEnter={(e) => hasChanges && (e.currentTarget.style.backgroundColor = '#15803d')}
+          onMouseLeave={(e) => hasChanges && (e.currentTarget.style.backgroundColor = '#16a34a')}
         >
-          {isSaving ? 'Salvando...' : 'Salvar Configurações'}
+          {isSaving ? '⏳ Salvando...' : '✅ Salvar Configurações'}
         </Button>
         {hasChanges && (
           <p style={{ fontSize: '14px', color: '#ea580c', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '500' }}>
-            ⚠️ Existem mudanças não salvas
+            ⚠️ Mudanças não salvas
           </p>
         )}
       </div>
 
-      {/* Summary Card */}
-      <Card style={{ backgroundColor: '#FFFFFF', borderColor: '#dcfce7' }}>
-        <CardHeader style={{ backgroundColor: '#f0fdf4', borderBottomColor: '#dcfce7', borderBottomWidth: '1px' }}>
-          <CardTitle style={{ fontSize: '18px', color: '#166534' }}>Resumo das Configurações</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2" style={{ backgroundColor: '#FFFFFF' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ color: '#4b5563', fontWeight: '500' }}>Status:</span>
-            <span style={{ fontWeight: '600', color: form.enableScheduling ? '#16a34a' : '#dc2626' }}>
-              {form.enableScheduling ? '✓ Ativado' : '✗ Desativado'}
-            </span>
-          </div>
-          {form.enableScheduling && (
-            <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: '#4b5563', fontWeight: '500' }}>Tempo mínimo:</span>
-                <span style={{ fontWeight: '600', color: '#111827' }}>{form.minScheduleMinutes} minutos</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: '#4b5563', fontWeight: '500' }}>Dias máximos:</span>
-                <span style={{ fontWeight: '600', color: '#111827' }}>{form.maxScheduleDays} dia(s)</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: '#4b5563', fontWeight: '500' }}>Agendamento em dias fechados:</span>
-                <span style={{ fontWeight: '600', color: form.allowSchedulingOnClosedDays ? '#16a34a' : '#ea580c' }}>
-                  {form.allowSchedulingOnClosedDays ? 'Permitido' : 'Bloqueado'}
-                </span>
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
+      {/* Dialog de Gerenciamento de Slots */}
+      <SchedulingSlotManagementDialog
+        open={showSlotsDialog}
+        onOpenChange={setShowSlotsDialog}
+        tenantId={tenantId}
+      />
     </div>
   );
 }
