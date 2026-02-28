@@ -32,6 +32,14 @@ export function useSettingsRealtimeSync() {
 
           // Sincronizar para o store - mapear ALL campos
           const settingsData = data as any;
+          console.log('📋 [SETTINGS-SYNC] Dados completos carregados:', {
+            enable_scheduling: settingsData.enable_scheduling,
+            min_schedule_minutes: settingsData.min_schedule_minutes,
+            max_schedule_days: settingsData.max_schedule_days,
+            allow_scheduling_on_closed_days: settingsData.allow_scheduling_on_closed_days,
+            allow_scheduling_outside_business_hours: settingsData.allow_scheduling_outside_business_hours,
+          });
+
           updateSettings({
             enableScheduling: settingsData.enable_scheduling ?? false,
             minScheduleMinutes: settingsData.min_schedule_minutes ?? 30,
