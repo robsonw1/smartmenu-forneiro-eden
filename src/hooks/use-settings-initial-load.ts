@@ -44,6 +44,7 @@ export function useSettingsInitialLoad() {
             minScheduleMinutes: settingsData.min_schedule_minutes ?? 30,
             maxScheduleDays: settingsData.max_schedule_days ?? 7,
             allowSchedulingOnClosedDays: settingsData.allow_scheduling_on_closed_days ?? false,
+            allowSchedulingOutsideBusinessHours: settingsData.allow_scheduling_outside_business_hours ?? false,
           });
 
           console.log('✅ Store atualizado com sucesso');
