@@ -50,6 +50,7 @@ import {
   MessageCircle,
   BarChart3,
   Clock,
+  Power,
 } from 'lucide-react';
 import {
   Product,
@@ -83,6 +84,26 @@ import { useSettingsRealtimeSync } from '@/hooks/use-settings-realtime-sync';
 import { useSettingsInitialLoad } from '@/hooks/use-settings-initial-load';
 import logoForneiro from '@/assets/logo-forneiro.jpg';
 
+const dayLabels: Record<keyof any, string> = {
+  monday: 'Segunda-feira',
+  tuesday: 'Terça-feira',
+  wednesday: 'Quarta-feira',
+  thursday: 'Quinta-feira',
+  friday: 'Sexta-feira',
+  saturday: 'Sábado',
+  sunday: 'Domingo',
+};
+
+const dayOrder: string[] = [
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+  'sunday',
+];
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
@@ -102,6 +123,9 @@ const AdminDashboard = () => {
   const settings = useSettingsStore((s) => s.settings);
   const updateSettings = useSettingsStore((s) => s.updateSettings);
   const changePassword = useSettingsStore((s) => s.changePassword);
+  const updateDaySchedule = useSettingsStore((s) => s.updateDaySchedule);
+  const toggleManualOpen = useSettingsStore((s) => s.toggleManualOpen);
+  const isStoreOpen = useSettingsStore((s) => s.isStoreOpen);
 
   // Neighborhoods store
   const neighborhoods = useNeighborhoodsStore((s) => s.neighborhoods);
@@ -298,18 +322,6 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error('Erro ao sincronizar horário:', error);
       toast.error('Erro ao salvar horário');
-    }
-  };
-
-  // Alternar aberto/fechado manualmente e sincronizar com Supabase
-  const handleManualOpenToggle = async () => {
-    try {
-      const newState = !settingsForm.isManuallyOpen;
-      setSettingsForm({ ...settingsForm, isManuallyOpen: newState });
-      await updateSettings({ ...settingsForm, isManuallyOpen: newState });
-    } catch (error) {
-      console.error('Erro ao sincronizar status da loja:', error);
-      toast.error('Erro ao atualizar status da loja');
     }
   };
 
@@ -556,6 +568,21 @@ const AdminDashboard = () => {
     } else {
       toast.error(result.message);
     }
+  };
+
+  const handleDayScheduleChange = (day: string, updates: any) => {
+    updateDaySchedule(day as any, updates);
+    toast.info(`✏️ Alteração em ${dayLabels[day]} - Clique em "Salvar Alterações" para confirmar`);
+  };
+
+  const handleManualOpenToggle = async () => {
+    toggleManualOpen();
+    const newState = !settings.isManuallyOpen;
+    
+    // Salvar imediatamente no Supabase para sincronizar
+    await updateSettings({ isManuallyOpen: newState });
+    
+    toast.success(newState ? '✓ Loja aberta!' : '✗ Loja fechada!');
   };
 
   const handleDeleteConfirm = async () => {
@@ -1330,6 +1357,96 @@ const AdminDashboard = () => {
                           className="w-20" 
                         />
                       </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* 🕐 Horário de Funcionamento */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-5 h-5 text-blue-600" />
+                      <h3 className="text-lg font-semibold">🕐 Horário de Funcionamento</h3>
+                    </div>
+
+                    {/* Manual Open/Close Toggle */}
+                    <div className="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          settings.isManuallyOpen ? 'bg-green-500/20' : 'bg-red-500/20'
+                        }`}>
+                          <Power className={`w-5 h-5 ${settings.isManuallyOpen ? 'text-green-500' : 'text-red-500'}`} />
+                        </div>
+                        <div>
+                          <p className="font-semibold">Estabelecimento</p>
+                          <p className="text-sm text-muted-foreground">
+                            {settings.isManuallyOpen ? '✓ Aberto para pedidos' : '✗ Fechado manualmente'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <Badge variant={isStoreOpen() ? 'default' : 'destructive'}>
+                          {isStoreOpen() ? '✓ ABERTO AGORA' : '✗ FECHADO'}
+                        </Badge>
+                        <Button
+                          variant={settings.isManuallyOpen ? 'destructive' : 'default'}
+                          size="sm"
+                          onClick={handleManualOpenToggle}
+                        >
+                          {settings.isManuallyOpen ? '🔒 Fechar Loja' : '🔓 Abrir Loja'}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Schedule per day */}
+                    <div className="space-y-3">
+                      <p className="text-sm font-semibold text-muted-foreground">Horários por Dia da Semana</p>
+                      {dayOrder.map((day) => {
+                        const schedule = settings.schedule[day];
+                        if (!schedule) return null;
+                        return (
+                          <div 
+                            key={day} 
+                            className={`flex items-center justify-between p-3 rounded-lg border ${
+                              schedule.isOpen ? 'bg-card' : 'bg-secondary/30 opacity-60'
+                            }`}
+                          >
+                            <div className="flex items-center gap-4 flex-1">
+                              <Switch
+                                checked={schedule.isOpen}
+                                onCheckedChange={(checked) => handleDayScheduleChange(day, { isOpen: checked })}
+                              />
+                              <span className="font-medium w-32">{dayLabels[day]}</span>
+                            </div>
+                            
+                            {schedule.isOpen && (
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="time"
+                                  value={schedule.openTime}
+                                  onChange={(e) => handleDayScheduleChange(day, { openTime: e.target.value })}
+                                  className="w-28"
+                                />
+                                <span className="text-muted-foreground text-sm">às</span>
+                                <Input
+                                  type="time"
+                                  value={schedule.closeTime}
+                                  onChange={(e) => handleDayScheduleChange(day, { closeTime: e.target.value })}
+                                  className="w-28"
+                                />
+                              </div>
+                            )}
+                            
+                            {!schedule.isOpen && (
+                              <Badge variant="outline">Fechado</Badge>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="text-xs bg-blue-50 dark:bg-blue-950/20 p-3 rounded border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-100">
+                      💡 <strong>Dica:</strong> Esses horários definem quando sua loja funciona e são exibidos no rodapé para o cliente.
                     </div>
                   </div>
 
