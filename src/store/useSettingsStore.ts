@@ -40,6 +40,9 @@ interface StoreSettings {
   maxScheduleDays?: number; // Máximo de dias que pode agendar
   allowSchedulingOnClosedDays?: boolean; // Permite agendar em dias que loja está fechada
   allowSchedulingOutsideBusinessHours?: boolean; // Permite agendar fora do horário de atendimento
+  respectBusinessHoursForScheduling?: boolean; // Se TRUE, só exibe slots dentro do horário
+  allowSameDaySchedulingOutsideHours?: boolean; // Se TRUE, permite agendar para HOJE fora do horário
+  timezone?: string; // Fuso horário do tenant (ex: America/Sao_Paulo)
 }
 
 interface SettingsStore {
@@ -88,6 +91,9 @@ const defaultSettings: StoreSettings = {
   maxScheduleDays: 7,
   allowSchedulingOnClosedDays: false,
   allowSchedulingOutsideBusinessHours: false,
+  respectBusinessHoursForScheduling: true,
+  allowSameDaySchedulingOutsideHours: false,
+  timezone: 'America/Sao_Paulo',
 };
 
 const dayNames: (keyof WeekSchedule)[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -137,6 +143,8 @@ export const useSettingsStore = create<SettingsStore>()(
           max_schedule_days: currentSettings.maxScheduleDays ?? 7,
           allow_scheduling_on_closed_days: currentSettings.allowSchedulingOnClosedDays ?? false,
           allow_scheduling_outside_business_hours: currentSettings.allowSchedulingOutsideBusinessHours ?? false,
+          respect_business_hours_for_scheduling: currentSettings.respectBusinessHoursForScheduling ?? true,
+          allow_same_day_scheduling_outside_hours: currentSettings.allowSameDaySchedulingOutsideHours ?? false,
           updated_at: new Date().toISOString(),
         })
         .eq('id', 'store-settings');
@@ -263,6 +271,8 @@ export const useSettingsStore = create<SettingsStore>()(
           max_schedule_days: settings.maxScheduleDays ?? 7,
           allow_scheduling_on_closed_days: settings.allowSchedulingOnClosedDays ?? false,
           allow_scheduling_outside_business_hours: settings.allowSchedulingOutsideBusinessHours ?? false,
+          respect_business_hours_for_scheduling: settings.respectBusinessHoursForScheduling ?? true,
+          allow_same_day_scheduling_outside_hours: settings.allowSameDaySchedulingOutsideHours ?? false,
           updated_at: new Date().toISOString(),
         })
         .eq('id', 'store-settings');
