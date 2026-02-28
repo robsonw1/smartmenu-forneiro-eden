@@ -37,6 +37,7 @@ export function useSettingsRealtimeSync() {
             minScheduleMinutes: settingsData.min_schedule_minutes ?? 30,
             maxScheduleDays: settingsData.max_schedule_days ?? 7,
             allowSchedulingOnClosedDays: settingsData.allow_scheduling_on_closed_days ?? false,
+            allowSchedulingOutsideBusinessHours: settingsData.allow_scheduling_outside_business_hours ?? false,
           });
         }
       } catch (error) {
@@ -75,6 +76,7 @@ export function useSettingsRealtimeSync() {
             minScheduleMinutes: newData.min_schedule_minutes ?? 30,
             maxScheduleDays: newData.max_schedule_days ?? 7,
             allowSchedulingOnClosedDays: newData.allow_scheduling_on_closed_days ?? false,
+            allowSchedulingOutsideBusinessHours: newData.allow_scheduling_outside_business_hours ?? false,
           });
 
           console.log('✅ [SETTINGS-SYNC] Store atualizado em tempo real!');
