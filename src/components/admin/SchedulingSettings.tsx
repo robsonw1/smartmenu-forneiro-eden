@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Clock, Power } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
-import { useSettingsStore, WeekSchedule } from '@/store/useSettingsStore';
+import { useSettingsStore } from '@/store/useSettingsStore';
 import { SchedulingSlotManagementDialog } from './SchedulingSlotManagementDialog';
 import { toast } from 'sonner';
 
@@ -21,34 +20,14 @@ type SchedulingForm = {
   allowSameDaySchedulingOutsideHours: boolean;
 };
 
-const dayLabels: Record<keyof WeekSchedule, string> = {
-  monday: 'Segunda-feira',
-  tuesday: 'Terça-feira',
-  wednesday: 'Quarta-feira',
-  thursday: 'Quinta-feira',
-  friday: 'Sexta-feira',
-  saturday: 'Sábado',
-  sunday: 'Domingo',
-};
-
-const dayOrder: (keyof WeekSchedule)[] = [
-  'monday',
-  'tuesday',
-  'wednesday',
-  'thursday',
-  'friday',
-  'saturday',
-  'sunday',
-];
-
 interface SchedulingSettingsProps {
-  onScheduleChange?: (day: keyof WeekSchedule, updates: any) => void;
+  onScheduleChange?: (day: string, updates: any) => void;
   onManualOpenToggle?: () => void;
 }
 
 export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: SchedulingSettingsProps = {}) {
   console.log('🚀 [SchedulingSettings] COMPONENTE RENDERIZANDO');
-  const { settings, updateSettings, updateDaySchedule, toggleManualOpen, isStoreOpen } = useSettingsStore();
+  const { settings, updateSettings } = useSettingsStore();
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [showSlotsDialog, setShowSlotsDialog] = useState(false);
@@ -117,16 +96,6 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
     const numValue = parseInt(value) || 0;
     setForm(prev => ({ ...prev, [field]: numValue }));
     setHasChanges(true);
-  };
-
-  const handleDayScheduleChange = (day: keyof WeekSchedule, updates: any) => {
-    updateDaySchedule(day, updates);
-    onScheduleChange?.(day, updates);
-  };
-
-  const handleManualOpenToggle = () => {
-    toggleManualOpen();
-    onManualOpenToggle?.();
   };
 
   const handleSave = async () => {
@@ -227,124 +196,6 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
                 >
                   📅 Gerenciar Horários
                 </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Horário de Funcionamento Card */}
-          <Card style={{ backgroundColor: '#FFFFFF', borderColor: '#e0e7ff' }}>
-            <CardHeader style={{ backgroundColor: '#f0f4ff', borderBottomColor: '#e0e7ff', borderBottomWidth: '1px' }}>
-              <CardTitle style={{ color: '#4f46e5', fontSize: '18px' }}>🕐 Horário de Funcionamento</CardTitle>
-              <CardDescription style={{ color: '#4338ca' }}>Configure os dias e horários de funcionamento do seu estabelecimento</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6 space-y-4">
-              {/* Manual Open/Close Toggle */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', backgroundColor: '#f5f3ff', borderRadius: '8px', borderColor: '#e0e7ff', borderWidth: '1px' }}>
-                <div className="flex items-center gap-3">
-                  <div style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: settings.isManuallyOpen ? '#dcfce7' : '#fee2e2'
-                  }}>
-                    <Power style={{ color: settings.isManuallyOpen ? '#16a34a' : '#dc2626', width: '20px', height: '20px' }} />
-                  </div>
-                  <div>
-                    <p style={{ fontWeight: 'bold', color: '#000000' }}>Estabelecimento</p>
-                    <p style={{ fontSize: '12px', color: '#6b7280' }}>
-                      {settings.isManuallyOpen ? '✓ Aberto para pedidos' : '✗ Fechado manualmente'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Badge style={{
-                    backgroundColor: isStoreOpen() ? '#dcfce7' : '#fee2e2',
-                    color: isStoreOpen() ? '#166534' : '#991b1b',
-                    border: 'none'
-                  }}>
-                    {isStoreOpen() ? '✓ ABERTO AGORA' : '✗ FECHADO'}
-                  </Badge>
-                  <Button
-                    onClick={handleManualOpenToggle}
-                    style={{
-                      backgroundColor: settings.isManuallyOpen ? '#dc2626' : '#16a34a',
-                      color: '#ffffff',
-                      fontSize: '14px',
-                      fontWeight: '600'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = settings.isManuallyOpen ? '#991b1b' : '#15803d'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = settings.isManuallyOpen ? '#dc2626' : '#16a34a'}
-                  >
-                    {settings.isManuallyOpen ? '🔒 Fechar Loja' : '🔓 Abrir Loja'}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Schedule per day */}
-              <div className="space-y-3">
-                <div style={{ fontSize: '14px', fontWeight: '600', color: '#000000', marginBottom: '12px' }}>
-                  ⏰ <strong>Horário de Funcionamento por Dia</strong>
-                </div>
-                
-                {dayOrder.map((day) => {
-                  const schedule = settings.schedule[day];
-                  return (
-                    <div 
-                      key={day} 
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '12px',
-                        borderRadius: '8px',
-                        border: '1px solid #e5e7eb',
-                        backgroundColor: schedule.isOpen ? '#ffffff' : '#f9fafb',
-                        opacity: schedule.isOpen ? 1 : 0.7
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
-                        <Switch
-                          checked={schedule.isOpen}
-                          onCheckedChange={(checked) => handleDayScheduleChange(day, { isOpen: checked })}
-                        />
-                        <span style={{ fontWeight: '600', width: '140px', color: '#111827', fontSize: '14px' }}>
-                          {dayLabels[day]}
-                        </span>
-                      </div>
-                      
-                      {schedule.isOpen && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <Input
-                            type="time"
-                            value={schedule.openTime}
-                            onChange={(e) => handleDayScheduleChange(day, { openTime: e.target.value })}
-                            style={{ width: '100px', height: '36px', fontSize: '13px' }}
-                          />
-                          <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: '500' }}>às</span>
-                          <Input
-                            type="time"
-                            value={schedule.closeTime}
-                            onChange={(e) => handleDayScheduleChange(day, { closeTime: e.target.value })}
-                            style={{ width: '100px', height: '36px', fontSize: '13px' }}
-                          />
-                        </div>
-                      )}
-                      
-                      {!schedule.isOpen && (
-                        <Badge style={{ backgroundColor: '#f3f4f6', color: '#6b7280', border: '1px solid #e5e7eb' }}>
-                          🚫 Fechado
-                        </Badge>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div style={{ fontSize: '12px', backgroundColor: '#f0f4ff', color: '#4338ca', padding: '12px', borderRadius: '6px', borderLeft: '4px solid #4f46e5' }}>
-                💡 <strong>Dica:</strong> O horário aqui define o funcionamento do estabelecimento e aparece no rodapé para o cliente. Ative/desative dias conforme necessário.
               </div>
             </CardContent>
           </Card>
