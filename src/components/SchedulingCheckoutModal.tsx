@@ -529,6 +529,25 @@ export function SchedulingCheckoutModal() {
           toast.error('Por favor, selecione a data e hora do agendamento');
           return false;
         }
+        
+        // ✅ VALIDAÇÃO CRITICAL: Verificar se a data está dentro do intervalo permitido
+        const maxDaysAllowed = settings.maxScheduleDays ?? 7;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const selectedDateObj = new Date(`${scheduledDate}T00:00`);
+        const daysDifference = Math.floor((selectedDateObj.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (daysDifference < 0) {
+          toast.error('Não é possível agendar para datas no passado');
+          return false;
+        }
+        
+        if (daysDifference > maxDaysAllowed) {
+          toast.error(`Você só pode agendar com até ${maxDaysAllowed} dia${maxDaysAllowed !== 1 ? 's' : ''} de antecedência`);
+          return false;
+        }
+        
         return true;
       case 'payment':
         // CPF é obrigatório APENAS para PIX
@@ -981,6 +1000,26 @@ export function SchedulingCheckoutModal() {
     }
     if (!validateStep('payment')) return;
     
+    // 🔒 VALIDAÇÃO CRÍTICA: Revalidar data de agendamento antes de submeter
+    // Isso previne que alguém tente manipular a data via DevTools
+    if (settings.enableScheduling && scheduledDate) {
+      const maxDaysAllowed = settings.maxScheduleDays ?? 7;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const selectedDateObj = new Date(`${scheduledDate}T00:00`);
+      const daysDifference = Math.floor((selectedDateObj.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysDifference > maxDaysAllowed) {
+        toast.error(`❌ Data inválida! Você só pode agendar com até ${maxDaysAllowed} dia${maxDaysAllowed !== 1 ? 's' : ''} de antecedência`);
+        console.warn('🚨 [SECURITY] Tentativa de agendar data além do limite permitido:', {
+          selectedDate: scheduledDate,
+          maxDaysAllowed,
+          daysDifference
+        });
+        return;
+      }
+    }
+    
     setIsProcessing(true);
     const orderId = `PED-${Date.now().toString().slice(-5)}`;
     setLastOrderId(orderId);
@@ -1372,7 +1411,10 @@ export function SchedulingCheckoutModal() {
 
   // 📅 Calcular datas de agendamento (mínima e máxima - ANTES do render para não resetar)
   const minDate = new Date().toISOString().split('T')[0];
-  const maxDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  
+  // ✅ CORRIGIDO: Usar maxScheduleDays do settings em vez de hardcoded 30 dias
+  const maxScheduleDays = settings.maxScheduleDays ?? 7; // Fallback para 7 se não configurado
+  const maxDate = new Date(Date.now() + maxScheduleDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
   const storeOpen = isStoreOpen();
   const visibleSteps = getVisibleSteps(deliveryType);
