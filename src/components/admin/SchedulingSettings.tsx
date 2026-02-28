@@ -92,8 +92,8 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
         return;
       }
 
-      if (form.maxScheduleDays < 1) {
-        toast.error('Máximo de dias deve ser pelo menos 1');
+      if (form.maxScheduleDays < 0) {
+        toast.error('Máximo de dias não pode ser negativo');
         return;
       }
 
@@ -226,14 +226,14 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
                     📅 Máximo de Dias de Antecedência
                   </Label>
                   <span style={{ fontSize: '11px', backgroundColor: '#dcfce7', color: '#166534', padding: '4px 10px', borderRadius: '4px', fontWeight: '600' }}>
-                    Recomendado: 7-14 dias
+                    Recomendado: 0-14 dias
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
                   <Input
                     id="maxScheduleDays"
                     type="number"
-                    min="1"
+                    min="0"
                     max="365"
                     value={form.maxScheduleDays}
                     onChange={(e) => handleNumberChange('maxScheduleDays', e.target.value)}
@@ -243,7 +243,7 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
                   <span style={{ fontSize: '14px', color: '#4b5563', fontWeight: '500' }}>dias</span>
                 </div>
                 <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '6px' }}>
-                  💡 Quantos dias no futuro o cliente pode agendar um pedido
+                  💡 Quantos dias no futuro o cliente pode agendar um pedido (0 = mesmo dia apenas)
                 </p>
               </div>
             </CardContent>
@@ -255,6 +255,8 @@ export function SchedulingSettings({ onScheduleChange, onManualOpenToggle }: Sch
               <strong>💡 Dicas para Configuração:</strong>
               <br />
               • Para pizzaria: tempo mínimo <strong>60-120 minutos</strong> (preparação e entrega)
+              <br />
+              • Máximo de <strong>0 dias</strong> = agendamento no mesmo dia apenas
               <br />
               • Máximo de <strong>7-14 dias</strong> permite boa gestão de demanda
               <br />
