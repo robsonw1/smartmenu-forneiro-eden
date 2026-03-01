@@ -994,7 +994,13 @@ export function SchedulingCheckoutModal() {
   };
 
   const handleSubmitOrder = async () => {
-    // 🔒 VALIDAÇÃO: Verificar se loja está aberta OU se permite agendamento fora do horário
+    // 🔒 VALIDAÇÃO CRÍTICA: Se loja está fechada manualmente, SEMPRE bloqueia
+    if (!settings.isManuallyOpen) {
+      toast.error('❌ Estabelecimento fechado manualmente. Não é possível fazer pedidos no momento.');
+      return;
+    }
+
+    // 🔒 VALIDAÇÃO: Se loja está fora do horário de atendimento
     if (!storeOpen && !settings.allowSchedulingOutsideBusinessHours) {
       toast.error('Estabelecimento fechado. Agendamento fora do horário não permitido.');
       return;
@@ -1423,14 +1429,15 @@ export function SchedulingCheckoutModal() {
   // ✅ Helper: Verificar se agendamento é para hoje
   const isScheduledForToday = scheduledDate === minDate;
 
-  // ✅ Lógica de aviso: Mostrar apenas se:
-  // 1. Loja está fechada AGORA
-  // 2. allowSchedulingOutsideBusinessHours está DESATIVADO
-  // 3. OU se é para hoje E allowSameDaySchedulingOutsideHours está DESATIVADO
-  const shouldShowStoreClosedAlert = !storeOpen && 
-    step !== 'confirmation' && 
-    !settings.allowSchedulingOutsideBusinessHours &&
-    !(step === 'scheduling' && isScheduledForToday && settings.allowSameDaySchedulingOutsideHours);
+  // ✅ Lógica de aviso: Mostrar se:
+  // 1. Loja está MANUALMENTE fechada, OU
+  // 2. Loja está fora do horário E allowSchedulingOutsideBusinessHours está DESATIVADO
+  // MAS: Se é para HOJE E allowSameDaySchedulingOutsideHours está ATIVADO, suprime o aviso
+  const shouldShowStoreClosedAlert = 
+    !settings.isManuallyOpen || // Loja fechada manualmente
+    (!storeOpen && !settings.allowSchedulingOutsideBusinessHours) // Ou fora do horário sem permissão
+    && step !== 'confirmation' 
+    && !(step === 'scheduling' && isScheduledForToday && settings.allowSameDaySchedulingOutsideHours);
   const visibleSteps = getVisibleSteps(deliveryType);
 
   return (
@@ -1455,13 +1462,13 @@ export function SchedulingCheckoutModal() {
               <Alert variant="destructive" className="mt-4">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>Estabelecimento fechado.</strong> Agendamento fora do horário não está permitido.
+                  <strong>{!settings.isManuallyOpen ? '🔒 Estabelecimento Fechado Manualmente.' : '⏰ Fora do Horário de Funcionamento.'}</strong> {!settings.isManuallyOpen ? 'Não é possível fazer pedidos no momento.' : 'Agendamento fora do horário não está permitido.'}
                   Consulte nosso horário de funcionamento.
                 </AlertDescription>
               </Alert>
             )}
 
-            {!storeOpen && step !== 'confirmation' && settings.allowSchedulingOutsideBusinessHours && (
+            {!storeOpen && step !== 'confirmation' && settings.allowSchedulingOutsideBusinessHours && settings.isManuallyOpen && (
               <Alert className="mt-4" style={{ backgroundColor: '#fef08a', borderColor: '#facc15', color: '#92400e' }}>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
