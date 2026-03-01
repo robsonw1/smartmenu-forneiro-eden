@@ -518,6 +518,12 @@ export function CheckoutModal() {
   };
 
   const nextStep = () => {
+    // 🔒 BLOQUEIO: Se loja está fechada, NÃO permite avançar para próximos passos
+    if (!storeOpen || !settings.isManuallyOpen) {
+      toast.error(!settings.isManuallyOpen ? '🔒 Estabelecimento fechado manualmente. Não é possível fazer pedidos.' : '⏰ Estabelecimento fora do horário. Não é possível fazer pedidos.');
+      return;
+    }
+    
     const baseSteps: Step[] = ['contact', 'delivery', 'address', 'payment'];
     
     // Skip address step if pickup
@@ -956,12 +962,24 @@ export function CheckoutModal() {
   };
 
   const handleSubmitOrder = async () => {
-    // 🔒 VALIDAÇÃO CRÍTICA: Pedidos normais (não agendados) SÓ são permitidos se a loja está aberta
-    if (!settings.isManuallyOpen || !storeOpen) {
+    // 🔒 VALIDAÇÃO CRÍTICA #1: Verificar se loja está aberta - RECHECK antes de processar
+    const currentStoreOpen = isStoreOpen();
+    if (!settings.isManuallyOpen !== false && !currentStoreOpen) {
       const reason = !settings.isManuallyOpen 
         ? '🔒 Estabelecimento fechado manualmente'
         : '⏰ Estabelecimento fora do horário de funcionamento';
       toast.error(`${reason}. Não é possível fazer pedidos no momento.`);
+      console.log('🚫 [BLOQUEIO] Pedido bloqueado - Loja fechada');
+      return;
+    }
+    
+    // 🔒 VALIDAÇÃO CRÍTICA #2: Dupla validação - se qualquer uma falhar, bloqueia
+    if (!settings.isManuallyOpen || !currentStoreOpen) {
+      const reason = !settings.isManuallyOpen 
+        ? '🔒 Estabelecimento Fechado Manualmente'
+        : '⏰ Fora do Horário de Funcionamento';
+      toast.error(`${reason}. Não é possível fazer pedidos no momento.`);
+      console.log('🚫 [BLOQUEIO DUPLO] Pedido bloqueado');
       return;
     }
     if (!validateStep('payment')) return;
@@ -2138,7 +2156,8 @@ export function CheckoutModal() {
                   <Button 
                     className="btn-cta gap-2"
                     onClick={handleSubmitOrder}
-                    disabled={isProcessing}
+                    disabled={isProcessing || !storeOpen || !settings.isManuallyOpen}
+                    title={(!storeOpen || !settings.isManuallyOpen) ? '🔒 Loja fechada. Pedidos não permitidos.' : ''}
                   >
                     {isProcessing ? (
                       <>
@@ -2158,7 +2177,12 @@ export function CheckoutModal() {
                     )}
                   </Button>
                 ) : (
-                  <Button className="btn-cta gap-2" onClick={nextStep}>
+                  <Button 
+                    className="btn-cta gap-2" 
+                    onClick={nextStep}
+                    disabled={!storeOpen || !settings.isManuallyOpen}
+                    title={(!storeOpen || !settings.isManuallyOpen) ? '🔒 Loja fechada. Pedidos não permitidos.' : ''}
+                  >
                     Continuar
                     <ArrowRight className="w-4 h-4" />
                   </Button>
