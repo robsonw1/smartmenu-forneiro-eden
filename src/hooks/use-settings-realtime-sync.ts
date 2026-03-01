@@ -4,8 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Hook que sincroniza as configurações em tempo real do Supabase
- * Funciona entre navegadores, abas, modo incógnito - sincroniza para todos
- * SINCRONIZA TODOS OS CAMPOS: isManuallyOpen, schedule, timing, etc
+ * SINCRONIZA: isManuallyOpen (CRÍTICO), schedule, timing, etc
  */
 export function useSettingsRealtimeSync() {
   const updateSettings = useSettingsStore((s) => s.updateSettings);
@@ -18,7 +17,6 @@ export function useSettingsRealtimeSync() {
       try {
         console.log('🔄 [SETTINGS-SYNC] Carregando configurações do Supabase...');
         
-        // 1. Carregar configurações atualizadas do Supabase na primeira vez
         const { data, error } = await supabase
           .from('settings')
           .select('*')
@@ -32,14 +30,27 @@ export function useSettingsRealtimeSync() {
 
         if (data && isSubscribed) {
           console.log('📥 [SETTINGS-SYNC] Configurações carregadas com sucesso');
+          
           const settingsData = data as any;
-          console.log('⏰ [SETTINGS-SYNC] Dados:', {
-            isManuallyOpen: settingsData.is_manually_open,
-            enableScheduling: settingsData.enable_scheduling,
-          });
+          const valueJson = settingsData.value || {};
+          
+          console.log('👀 [SETTINGS-SYNC] isManuallyOpen:', valueJson.isManuallyOpen);
+          console.log('⏰ [SETTINGS-SYNC] schedule:', valueJson.schedule);
 
-          // Mapear para o formato do store
+          // Mapear TODOS os campos para o store
           await updateSettings({
+            name: valueJson.name || 'Forneiro Éden',
+            phone: valueJson.phone || '(11) 99999-9999',
+            address: valueJson.address || 'Rua das Pizzas, 123 - Centro',
+            slogan: valueJson.slogan || 'A Pizza mais recheada da cidade 🇮🇹',
+            schedule: valueJson.schedule || {},
+            isManuallyOpen: valueJson.isManuallyOpen ?? true,
+            deliveryTimeMin: valueJson.deliveryTimeMin ?? 60,
+            deliveryTimeMax: valueJson.deliveryTimeMax ?? 70,
+            pickupTimeMin: valueJson.pickupTimeMin ?? 40,
+            pickupTimeMax: valueJson.pickupTimeMax ?? 50,
+            orderAlertEnabled: valueJson.orderAlertEnabled ?? true,
+            sendOrderSummaryToWhatsApp: valueJson.sendOrderSummaryToWhatsApp ?? false,
             enableScheduling: settingsData.enable_scheduling ?? false,
             minScheduleMinutes: settingsData.min_schedule_minutes ?? 30,
             maxScheduleDays: settingsData.max_schedule_days ?? 7,
@@ -49,17 +60,16 @@ export function useSettingsRealtimeSync() {
             allowSameDaySchedulingOutsideHours: settingsData.allow_same_day_scheduling_outside_hours ?? false,
           });
           
-          console.log('✅ [SETTINGS-SYNC] Store atualizado na primeira carga');
+          console.log('✅ [SETTINGS-SYNC] Store atualizado com SUCESSO na primeira carga');
         }
       } catch (error) {
         console.error('❌ [SETTINGS-SYNC] Erro ao configurar realtime:', error);
       }
     };
 
-    // Carregar dados iniciais
     setupRealtimeSync();
 
-    // 2. Inscrever-se a mudanças em TEMPO REAL
+    // Inscrever-se a mudanças em TEMPO REAL
     channel = supabase
       .channel('settings-realtime-sync')
       .on(
@@ -73,13 +83,32 @@ export function useSettingsRealtimeSync() {
         async (payload: any) => {
           if (!isSubscribed) return;
 
-          console.log('🔄 [SETTINGS-SYNC] ⚡ MUDANÇA DETECTADA EM TEMPO REAL!');
-          console.log('📊 [SETTINGS-SYNC] Dados:', payload.new);
-
+          console.log('⚡⚡⚡ [SETTINGS-SYNC] MUDANÇA DETECTADA EM TEMPO REAL ⚡⚡⚡');
+          
           const newData = payload.new as any;
+          const newValueJson = newData.value || {};
+          
+          console.log('🔴 [SETTINGS-SYNC] NOVO isManuallyOpen:', newValueJson.isManuallyOpen);
+          console.log('📊 [SETTINGS-SYNC] Novos dados completos:', {
+            isManuallyOpen: newValueJson.isManuallyOpen,
+            schedule: newValueJson.schedule,
+            enable_scheduling: newData.enable_scheduling,
+          });
 
-          // Atualizar o store com TODOS os campos sincronizados
+          // Atualizar TODOS os campos
           await updateSettings({
+            name: newValueJson.name || 'Forneiro Éden',
+            phone: newValueJson.phone || '(11) 99999-9999',
+            address: newValueJson.address || 'Rua das Pizzas, 123 - Centro',
+            slogan: newValueJson.slogan || 'A Pizza mais recheada da cidade 🇮🇹',
+            schedule: newValueJson.schedule || {},
+            isManuallyOpen: newValueJson.isManuallyOpen ?? true,
+            deliveryTimeMin: newValueJson.deliveryTimeMin ?? 60,
+            deliveryTimeMax: newValueJson.deliveryTimeMax ?? 70,
+            pickupTimeMin: newValueJson.pickupTimeMin ?? 40,
+            pickupTimeMax: newValueJson.pickupTimeMax ?? 50,
+            orderAlertEnabled: newValueJson.orderAlertEnabled ?? true,
+            sendOrderSummaryToWhatsApp: newValueJson.sendOrderSummaryToWhatsApp ?? false,
             enableScheduling: newData.enable_scheduling ?? false,
             minScheduleMinutes: newData.min_schedule_minutes ?? 30,
             maxScheduleDays: newData.max_schedule_days ?? 7,
@@ -89,26 +118,24 @@ export function useSettingsRealtimeSync() {
             allowSameDaySchedulingOutsideHours: newData.allow_same_day_scheduling_outside_hours ?? false,
           });
 
-          console.log('✅ [SETTINGS-SYNC] ⚡ Store atualizado em tempo real com TODOS os campos!');
+          console.log('✅✅✅ [SETTINGS-SYNC] Store SINCRONIZADO em tempo real ✅✅✅');
         }
       )
       .subscribe((status, error) => {
         if (status === 'SUBSCRIBED') {
-          console.log('✅ [SETTINGS-SYNC] ⚡ Canal Realtime ATIVO e escutando mudanças!');
+          console.log('✅ [SETTINGS-SYNC] Canal Realtime ATIVO - ouvindo mudanças');
         } else if (status === 'CLOSED') {
           console.log('🔴 [SETTINGS-SYNC] Canal Realtime FECHADO');
         } else if (error) {
-          console.error('❌ [SETTINGS-SYNC] Erro no canal Realtime:', error);
+          console.error('❌ [SETTINGS-SYNC] Erro:', error);
         }
       });
 
-    // Cleanup - executar apenas ao desmontar
     return () => {
       isSubscribed = false;
       if (channel) {
-        console.log('🧹 [SETTINGS-SYNC] Limpando canal Realtime...');
         supabase.removeChannel(channel);
       }
     };
-  }, []); // ✅ Dependências vazias - executa apenas uma vez ao montar
+  }, []);
 }
