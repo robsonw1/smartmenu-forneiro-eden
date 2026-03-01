@@ -24,6 +24,7 @@ import { useLoyaltyStore } from '@/store/useLoyaltyStore';
 import { useLoyaltySettingsStore } from '@/store/useLoyaltySettingsStore';
 import { useCouponManagementStore } from '@/store/useCouponManagementStore';
 import { useOrderCancellationSync } from '@/hooks/use-order-cancellation-sync';
+import { useStoreStatusRealtime } from '@/hooks/use-store-status-realtime';
 import { supabase } from '@/integrations/supabase/client';
 import { sendOrderSummaryToWhatsApp } from '@/lib/whatsapp-notification';
 import { PostCheckoutLoyaltyModal } from './PostCheckoutLoyaltyModal';
@@ -133,6 +134,9 @@ export function CheckoutModal() {
     customer?.email,
     refreshCurrentCustomer
   );
+
+  // ⚡ REALTIME: Monitorar status da loja em tempo real (abrir/fechar + horários)
+  useStoreStatusRealtime(isCheckoutOpen);
 
   // ✅ Função para formatar telefone
   const formatPhoneNumber = (phone: string): string => {
