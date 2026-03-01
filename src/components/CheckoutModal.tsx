@@ -962,19 +962,22 @@ export function CheckoutModal() {
   };
 
   const handleSubmitOrder = async () => {
-    // 🔒 VALIDAÇÃO CRÍTICA: Verificar se loja está aberta - RECHECK antes de processar
-    const currentStoreOpen = isStoreOpen();
-    console.log('🔍 [BLOQUEIO] Verificando status: isManuallyOpen =', settings.isManuallyOpen, 'storeOpen =', currentStoreOpen);
-    
-    // BLOQUEIO ABSOLUTO: Se loja fechada (manualmente OU fora do horário), rejeita
-    if (!settings.isManuallyOpen || !currentStoreOpen) {
-      const reason = !settings.isManuallyOpen 
-        ? '🔒 Estabelecimento fechado manualmente'
-        : '⏰ Estabelecimento fora do horário de funcionamento';
-      console.log('🚫 [BLOQUEIO TOTAL] Pedido REJEITADO:', reason);
-      toast.error(`${reason}. Não é possível fazer pedidos no momento.`);
-      return;
+    // � PROTEÇÃO CRÍTICA #1: Se loja está fechada, BLOQUEIA IMEDIATAMENTE - sem processamento
+    if (!settings.isManuallyOpen) {
+      console.error('🚫 [CHECKOUT] BLOQUEIO CRÍTICO: isManuallyOpen = false');
+      toast.error('🔒 ESTABELECIMENTO FECHADO MANUALMENTE! Não é possível fazer pedidos.');
+      return; // PARA AQUI - não continua
     }
+
+    // 🚫 PROTEÇÃO CRÍTICA #2: Recalcular se loja está aberta agora
+    const currentStoreOpen = isStoreOpen();
+    if (!currentStoreOpen) {
+      console.error('🚫 [CHECKOUT] BLOQUEIO CRÍTICO: storeOpen = false (fora do horário)');
+      toast.error('⏰ ESTABELECIMENTO FORA DO HORÁRIO! Não é possível fazer pedidos no momento.');
+      return; // PARA AQUI - não continua
+    }
+
+    console.log('✅ [CHECKOUT] Validações passaram - Processando pedido');
     if (!validateStep('payment')) return;
     
     setIsProcessing(true);
@@ -1363,18 +1366,17 @@ export function CheckoutModal() {
   };
 
   const storeOpen = isStoreOpen();
+  const isStoreClosed = !settings.isManuallyOpen || !storeOpen;
 
-  // 🔒 EFEITO BLOQUEANTE: Se loja fechar enquanto checkout está aberto, fecha automaticamente
+  // 🔒 BLOQUEIO CRÍTICO: Se loja fechada, mostrar estado bloqueado
   useEffect(() => {
-    if (!storeOpen || !settings.isManuallyOpen) {
-      console.log('⚠️ [CHECKOUT] Loja fechou! Fechando checkout modal...');
+    if (isCheckoutOpen && isStoreClosed) {
+      console.log('🚫 [CHECKOUT] LOJA FECHADA - Modal BLOQUEADA');
       toast.error(!settings.isManuallyOpen 
-        ? '🔒 Estabelecimento foi fechado. Checkout cancelado.' 
-        : '⏰ Loja saiu do horário. Checkout cancelado.');
-      setCheckoutOpen(false);
-      setStep('contact');
+        ? '🔒 Estabelecimento fechado manualmente. Pedidos não são permitidos.' 
+        : '⏰ Estabelecimento fora do horário. Pedidos não são permitidos.');
     }
-  }, [storeOpen, settings.isManuallyOpen, isCheckoutOpen]);
+  }, [isStoreClosed, isCheckoutOpen]);
 
   return (
     <>
@@ -1393,8 +1395,50 @@ export function CheckoutModal() {
               </DialogTitle>
             </DialogHeader>
 
+            {/* ⚠️ STORE CLOSED CRITICAL BANNER - BLOQUEANTE */}
+            {isStoreClosed && step !== 'confirmation' && (
+              <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center pointer-events-none">
+                <div className="bg-red-600 text-white p-8 rounded-xl text-center max-w-md shadow-2xl">
+                  <div className="text-5xl mb-4">🔒</div>
+                  <h3 className="text-2xl font-bold mb-2">
+                    {!settings.isManuallyOpen ? 'ESTABELECIMENTO FECHADO' : 'HORÁRIO NÃO PERMITIDO'}
+                  </h3>
+                  <p className="text-base font-semibold">
+                    {!settings.isManuallyOpen 
+                      ? 'Não é possível fazer pedidos no momento' 
+                      : 'Loja está fora do horário de funcionamento'}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Store Closed Alert */}
-            {(!storeOpen || !settings.isManuallyOpen) && step !== 'confirmation' && (
+            {isStoreClosed && step !== 'confirmation' && (
+              <Alert variant="destructive" className="mt-4 border-2 border-red-600">
+                <AlertCircle className="h-5 w-5" />
+                <AlertDescription className="font-bold text-base">
+                  <strong>{!settings.isManuallyOpen ? '🔒 ESTABELECIMENTO FECHADO MANUALMENTE' : '⏰ FORA DO HORÁRIO DE FUNCIONAMENTO'}</strong> 
+                  <br />
+                  Não é possível fazer pedidos no momento. Por favor, consulte nosso horário de funcionamento.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* 🔒 IF STORE IS CLOSED - RENDER DISABLED OVERLAY */}
+            {isStoreClosed && step !== 'confirmation' && (
+              <div className="mt-6 p-6 bg-red-50 border-2 border-red-300 rounded-lg">
+                <div className="flex items-center gap-4 text-red-700">
+                  <div className="text-4xl">🚫</div>
+                  <div>
+                    <p className="font-bold text-lg">Acesso bloqueado</p>
+                    <p className="text-sm">A loja não está funcionando agora. Volte mais tarde para fazer seu pedido.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Store Closed Alert */}
+            {(!storeOpen || !settings.isManuallyOpen) && step === 'confirmation' && (
               <Alert variant="destructive" className="mt-4">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
