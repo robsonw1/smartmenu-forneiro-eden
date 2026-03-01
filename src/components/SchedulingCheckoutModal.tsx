@@ -1002,22 +1002,22 @@ export function SchedulingCheckoutModal() {
   const handleSubmitOrder = async () => {
     // 🔒 VALIDAÇÃO CRÍTICA #1: Verificar se loja está aberta - RECHECK antes de processar
     const currentStoreOpen = isStoreOpen();
-    if (!settings.isManuallyOpen || !currentStoreOpen) {
-      const reason = !settings.isManuallyOpen 
-        ? '🔒 Estabelecimento fechado manualmente'
-        : '⏰ Estabelecimento fora do horário';
-      toast.error(`${reason}. Não é possível fazer pedidos no momento.`);
-      console.log('🚫 [BLOQUEIO] Agendamento bloqueado - Loja fechada');
+    console.log('🔍 [AGENDAMENTO] Verificando status: isManuallyOpen =', settings.isManuallyOpen, 'storeOpen =', currentStoreOpen);
+    
+    // BLOQUEIO ABSOLUTO: Se loja fechada manualmente, NUNCA permite
+    if (!settings.isManuallyOpen) {
+      console.log('🚫 [BLOQUEIO TOTAL] Agendamento REJEITADO: Estabelecimento fechado manualmente');
+      toast.error('🔒 Estabelecimento fechado manualmente. Não é possível fazer pedidos no momento.');
       return;
     }
-    
+
     // 🔒 VALIDAÇÃO CRÍTICA #2: Se agendamento fora do horário, verificar flags de permissão
     if (!currentStoreOpen && !settings.allowSchedulingOutsideBusinessHours) {
       // Se não está nos mesmos dias, nem permite mesmo que same-day esteja ativo
       const isScheduledToday = scheduledDate === new Date().toISOString().split('T')[0];
       if (!isScheduledToday || !settings.allowSameDaySchedulingOutsideHours) {
+        console.log('🚫 [BLOQUEIO] Agendamento REJEITADO - Fora do horário, flags não permitindo');
         toast.error('⏰ Agendamento fora do horário não permitido. Verifique nosso horário de funcionamento.');
-        console.log('🚫 [BLOQUEIO] Agendamento bloqueado - Fora do horário');
         return;
       }
     }
@@ -1441,6 +1441,18 @@ export function SchedulingCheckoutModal() {
 
   // ✅ Calcular status da loja
   const storeOpen = isStoreOpen();
+
+  // 🔒 EFEITO BLOQUEANTE: Se loja fechar enquanto checkout está aberto, fecha automaticamente
+  useEffect(() => {
+    if (!storeOpen || !settings.isManuallyOpen) {
+      console.log('⚠️ [SCHEDULING] Loja fechou! Fechando scheduling checkout modal...');
+      toast.error(!settings.isManuallyOpen 
+        ? '🔒 Estabelecimento foi fechado. Agendamento cancelado.' 
+        : '⏰ Loja saiu do horário. Agendamento cancelado.');
+      setSchedulingCheckoutOpen(false);
+      setStep('contact');
+    }
+  }, [storeOpen, settings.isManuallyOpen, isSchedulingCheckoutOpen]);
 
   // ✅ Helper: Verificar se agendamento é para hoje
   const isScheduledForToday = scheduledDate === minDate;
