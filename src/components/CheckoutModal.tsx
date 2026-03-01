@@ -962,24 +962,17 @@ export function CheckoutModal() {
   };
 
   const handleSubmitOrder = async () => {
-    // 🔒 VALIDAÇÃO CRÍTICA #1: Verificar se loja está aberta - RECHECK antes de processar
+    // 🔒 VALIDAÇÃO CRÍTICA: Verificar se loja está aberta - RECHECK antes de processar
     const currentStoreOpen = isStoreOpen();
-    if (!settings.isManuallyOpen !== false && !currentStoreOpen) {
+    console.log('🔍 [BLOQUEIO] Verificando status: isManuallyOpen =', settings.isManuallyOpen, 'storeOpen =', currentStoreOpen);
+    
+    // BLOQUEIO ABSOLUTO: Se loja fechada (manualmente OU fora do horário), rejeita
+    if (!settings.isManuallyOpen || !currentStoreOpen) {
       const reason = !settings.isManuallyOpen 
         ? '🔒 Estabelecimento fechado manualmente'
         : '⏰ Estabelecimento fora do horário de funcionamento';
+      console.log('🚫 [BLOQUEIO TOTAL] Pedido REJEITADO:', reason);
       toast.error(`${reason}. Não é possível fazer pedidos no momento.`);
-      console.log('🚫 [BLOQUEIO] Pedido bloqueado - Loja fechada');
-      return;
-    }
-    
-    // 🔒 VALIDAÇÃO CRÍTICA #2: Dupla validação - se qualquer uma falhar, bloqueia
-    if (!settings.isManuallyOpen || !currentStoreOpen) {
-      const reason = !settings.isManuallyOpen 
-        ? '🔒 Estabelecimento Fechado Manualmente'
-        : '⏰ Fora do Horário de Funcionamento';
-      toast.error(`${reason}. Não é possível fazer pedidos no momento.`);
-      console.log('🚫 [BLOQUEIO DUPLO] Pedido bloqueado');
       return;
     }
     if (!validateStep('payment')) return;
@@ -1370,6 +1363,18 @@ export function CheckoutModal() {
   };
 
   const storeOpen = isStoreOpen();
+
+  // 🔒 EFEITO BLOQUEANTE: Se loja fechar enquanto checkout está aberto, fecha automaticamente
+  useEffect(() => {
+    if (!storeOpen || !settings.isManuallyOpen) {
+      console.log('⚠️ [CHECKOUT] Loja fechou! Fechando checkout modal...');
+      toast.error(!settings.isManuallyOpen 
+        ? '🔒 Estabelecimento foi fechado. Checkout cancelado.' 
+        : '⏰ Loja saiu do horário. Checkout cancelado.');
+      setCheckoutOpen(false);
+      setStep('contact');
+    }
+  }, [storeOpen, settings.isManuallyOpen, isCheckoutOpen]);
 
   return (
     <>
