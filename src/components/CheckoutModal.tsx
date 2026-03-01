@@ -956,8 +956,12 @@ export function CheckoutModal() {
   };
 
   const handleSubmitOrder = async () => {
-    if (!storeOpen) {
-      toast.error('Estabelecimento fechado. Não é possível fazer pedidos no momento.');
+    // 🔒 VALIDAÇÃO CRÍTICA: Pedidos normais (não agendados) SÓ são permitidos se a loja está aberta
+    if (!settings.isManuallyOpen || !storeOpen) {
+      const reason = !settings.isManuallyOpen 
+        ? '🔒 Estabelecimento fechado manualmente'
+        : '⏰ Estabelecimento fora do horário de funcionamento';
+      toast.error(`${reason}. Não é possível fazer pedidos no momento.`);
       return;
     }
     if (!validateStep('payment')) return;
@@ -1367,11 +1371,11 @@ export function CheckoutModal() {
             </DialogHeader>
 
             {/* Store Closed Alert */}
-            {!storeOpen && step !== 'confirmation' && (
+            {(!storeOpen || !settings.isManuallyOpen) && step !== 'confirmation' && (
               <Alert variant="destructive" className="mt-4">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>Estabelecimento fechado.</strong> Não é possível fazer pedidos no momento. 
+                  <strong>{!settings.isManuallyOpen ? '🔒 Estabelecimento Fechado Manualmente.' : '⏰ Fora do Horário de Funcionamento.'}</strong> {!settings.isManuallyOpen ? 'Não é possível fazer pedidos no momento.' : 'Nossa loja não está aberta agora.'}
                   Consulte nosso horário de funcionamento.
                 </AlertDescription>
               </Alert>
