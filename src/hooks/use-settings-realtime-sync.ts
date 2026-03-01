@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 /**
  * Hook que sincroniza as configurações em tempo real do Supabase
  * Funciona entre navegadores, abas, modo incógnito - sincroniza para todos
+ * SINCRONIZA TODOS OS CAMPOS: isManuallyOpen, schedule, timing, etc
  */
 export function useSettingsRealtimeSync() {
   const updateSettings = useSettingsStore((s) => s.updateSettings);
@@ -15,6 +16,8 @@ export function useSettingsRealtimeSync() {
 
     const setupRealtimeSync = async () => {
       try {
+        console.log('🔄 [SETTINGS-SYNC] Carregando configurações do Supabase...');
+        
         // 1. Carregar configurações atualizadas do Supabase na primeira vez
         const { data, error } = await supabase
           .from('settings')
@@ -28,25 +31,25 @@ export function useSettingsRealtimeSync() {
         }
 
         if (data && isSubscribed) {
-          console.log('📥 [SETTINGS-SYNC] Configurações carregadas do Supabase');
-
-          // Sincronizar para o store - mapear ALL campos
+          console.log('📥 [SETTINGS-SYNC] Configurações carregadas com sucesso');
           const settingsData = data as any;
-          console.log('📋 [SETTINGS-SYNC] Dados completos carregados:', {
-            enable_scheduling: settingsData.enable_scheduling,
-            min_schedule_minutes: settingsData.min_schedule_minutes,
-            max_schedule_days: settingsData.max_schedule_days,
-            allow_scheduling_on_closed_days: settingsData.allow_scheduling_on_closed_days,
-            allow_scheduling_outside_business_hours: settingsData.allow_scheduling_outside_business_hours,
+          console.log('⏰ [SETTINGS-SYNC] Dados:', {
+            isManuallyOpen: settingsData.is_manually_open,
+            enableScheduling: settingsData.enable_scheduling,
           });
 
-          updateSettings({
+          // Mapear para o formato do store
+          await updateSettings({
             enableScheduling: settingsData.enable_scheduling ?? false,
             minScheduleMinutes: settingsData.min_schedule_minutes ?? 30,
             maxScheduleDays: settingsData.max_schedule_days ?? 7,
             allowSchedulingOnClosedDays: settingsData.allow_scheduling_on_closed_days ?? false,
             allowSchedulingOutsideBusinessHours: settingsData.allow_scheduling_outside_business_hours ?? false,
+            respectBusinessHoursForScheduling: settingsData.respect_business_hours_for_scheduling ?? true,
+            allowSameDaySchedulingOutsideHours: settingsData.allow_same_day_scheduling_outside_hours ?? false,
           });
+          
+          console.log('✅ [SETTINGS-SYNC] Store atualizado na primeira carga');
         }
       } catch (error) {
         console.error('❌ [SETTINGS-SYNC] Erro ao configurar realtime:', error);
@@ -70,33 +73,32 @@ export function useSettingsRealtimeSync() {
         async (payload: any) => {
           if (!isSubscribed) return;
 
-          console.log('🔄 [SETTINGS-SYNC] Mudança detectada em tempo real:', {
-            enableScheduling: payload.new.enable_scheduling,
-            minScheduleMinutes: payload.new.min_schedule_minutes,
-            maxScheduleDays: payload.new.max_schedule_days,
-          });
+          console.log('🔄 [SETTINGS-SYNC] ⚡ MUDANÇA DETECTADA EM TEMPO REAL!');
+          console.log('📊 [SETTINGS-SYNC] Dados:', payload.new);
 
           const newData = payload.new as any;
 
-          // Atualizar o store quando qualquer campo de scheduling mudar
-          updateSettings({
+          // Atualizar o store com TODOS os campos sincronizados
+          await updateSettings({
             enableScheduling: newData.enable_scheduling ?? false,
             minScheduleMinutes: newData.min_schedule_minutes ?? 30,
             maxScheduleDays: newData.max_schedule_days ?? 7,
             allowSchedulingOnClosedDays: newData.allow_scheduling_on_closed_days ?? false,
             allowSchedulingOutsideBusinessHours: newData.allow_scheduling_outside_business_hours ?? false,
+            respectBusinessHoursForScheduling: newData.respect_business_hours_for_scheduling ?? true,
+            allowSameDaySchedulingOutsideHours: newData.allow_same_day_scheduling_outside_hours ?? false,
           });
 
-          console.log('✅ [SETTINGS-SYNC] Store atualizado em tempo real!');
+          console.log('✅ [SETTINGS-SYNC] ⚡ Store atualizado em tempo real com TODOS os campos!');
         }
       )
       .subscribe((status, error) => {
         if (status === 'SUBSCRIBED') {
-          console.log('✅ [SETTINGS-SYNC] Canal realtime ativo');
+          console.log('✅ [SETTINGS-SYNC] ⚡ Canal Realtime ATIVO e escutando mudanças!');
         } else if (status === 'CLOSED') {
-          console.log('🔴 [SETTINGS-SYNC] Canal fechado');
+          console.log('🔴 [SETTINGS-SYNC] Canal Realtime FECHADO');
         } else if (error) {
-          console.error('❌ [SETTINGS-SYNC] Erro no canal:', error);
+          console.error('❌ [SETTINGS-SYNC] Erro no canal Realtime:', error);
         }
       });
 
@@ -104,6 +106,7 @@ export function useSettingsRealtimeSync() {
     return () => {
       isSubscribed = false;
       if (channel) {
+        console.log('🧹 [SETTINGS-SYNC] Limpando canal Realtime...');
         supabase.removeChannel(channel);
       }
     };
