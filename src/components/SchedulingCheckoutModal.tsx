@@ -1000,27 +1000,25 @@ export function SchedulingCheckoutModal() {
   };
 
   const handleSubmitOrder = async () => {
-    // 🔒 VALIDAÇÃO CRÍTICA #1: Verificar se loja está aberta - RECHECK antes de processar
-    const currentStoreOpen = isStoreOpen();
-    console.log('🔍 [AGENDAMENTO] Verificando status: isManuallyOpen =', settings.isManuallyOpen, 'storeOpen =', currentStoreOpen);
-    
-    // BLOQUEIO ABSOLUTO: Se loja fechada manualmente, NUNCA permite
+    // � PROTEÇÃO CRÍTICA #1: Se loja está fechada manualmente, BLOQUEIA IMEDIATAMENTE
     if (!settings.isManuallyOpen) {
-      console.log('🚫 [BLOQUEIO TOTAL] Agendamento REJEITADO: Estabelecimento fechado manualmente');
-      toast.error('🔒 Estabelecimento fechado manualmente. Não é possível fazer pedidos no momento.');
-      return;
+      console.error('🚫 [SCHEDULING] BLOQUEIO CRÍTICO: isManuallyOpen = false');
+      toast.error('🔒 ESTABELECIMENTO FECHADO MANUALMENTE! Não é possível agendar.');
+      return; // PARA AQUI - não continua
     }
 
-    // 🔒 VALIDAÇÃO CRÍTICA #2: Se agendamento fora do horário, verificar flags de permissão
+    // 🚫 PROTEÇÃO CRÍTICA #2: Recalcular se loja está aberta agora
+    const currentStoreOpen = isStoreOpen();
     if (!currentStoreOpen && !settings.allowSchedulingOutsideBusinessHours) {
-      // Se não está nos mesmos dias, nem permite mesmo que same-day esteja ativo
       const isScheduledToday = scheduledDate === new Date().toISOString().split('T')[0];
       if (!isScheduledToday || !settings.allowSameDaySchedulingOutsideHours) {
-        console.log('🚫 [BLOQUEIO] Agendamento REJEITADO - Fora do horário, flags não permitindo');
-        toast.error('⏰ Agendamento fora do horário não permitido. Verifique nosso horário de funcionamento.');
-        return;
+        console.error('🚫 [SCHEDULING] BLOQUEIO CRÍTICO: Fora do horário e sem permissão');
+        toast.error('⏰ ESTABELECIMENTO FORA DO HORÁRIO! Agendamento não permitido.');
+        return; // PARA AQUI - não continua
       }
     }
+
+    console.log('✅ [SCHEDULING] Validações passaram - Processando agendamento');
     if (!validateStep('payment')) return;
     
     // 🔒 VALIDAÇÃO CRÍTICA: Revalidar data de agendamento antes de submeter
@@ -1441,18 +1439,17 @@ export function SchedulingCheckoutModal() {
 
   // ✅ Calcular status da loja
   const storeOpen = isStoreOpen();
+  const isStoreClosed = !settings.isManuallyOpen || !storeOpen;
 
-  // 🔒 EFEITO BLOQUEANTE: Se loja fechar enquanto checkout está aberto, fecha automaticamente
+  // 🔒 BLOQUEIO CRÍTICO: Se loja fechada, mostrar estado bloqueado
   useEffect(() => {
-    if (!storeOpen || !settings.isManuallyOpen) {
-      console.log('⚠️ [SCHEDULING] Loja fechou! Fechando scheduling checkout modal...');
+    if (isSchedulingCheckoutOpen && isStoreClosed) {
+      console.log('🚫 [SCHEDULING] LOJA FECHADA - Modal BLOQUEADA');
       toast.error(!settings.isManuallyOpen 
-        ? '🔒 Estabelecimento foi fechado. Agendamento cancelado.' 
-        : '⏰ Loja saiu do horário. Agendamento cancelado.');
-      setSchedulingCheckoutOpen(false);
-      setStep('contact');
+        ? '🔒 Estabelecimento fechado manualmente. Agendamentos não são permitidos.' 
+        : '⏰ Estabelecimento fora do horário. Agendamentos não são permitidos.');
     }
-  }, [storeOpen, settings.isManuallyOpen, isSchedulingCheckoutOpen]);
+  }, [isStoreClosed, isSchedulingCheckoutOpen]);
 
   // ✅ Helper: Verificar se agendamento é para hoje
   const isScheduledForToday = scheduledDate === minDate;
@@ -1485,8 +1482,50 @@ export function SchedulingCheckoutModal() {
               </DialogTitle>
             </DialogHeader>
 
+            {/* ⚠️ STORE CLOSED CRITICAL BANNER - BLOQUEANTE */}
+            {isStoreClosed && step !== 'confirmation' && (
+              <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center pointer-events-none">
+                <div className="bg-red-600 text-white p-8 rounded-xl text-center max-w-md shadow-2xl">
+                  <div className="text-5xl mb-4">🔓</div>
+                  <h3 className="text-2xl font-bold mb-2">
+                    {!settings.isManuallyOpen ? 'ESTABELECIMENTO FECHADO' : 'HORÁRIO NÃO PERMITIDO'}
+                  </h3>
+                  <p className="text-base font-semibold">
+                    {!settings.isManuallyOpen 
+                      ? 'Não é possível agendar no momento' 
+                      : 'Loja está fora do horário'}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Store Closed Alert */}
-            {shouldShowStoreClosedAlert && (
+            {isStoreClosed && step !== 'confirmation' && (
+              <Alert variant="destructive" className="mt-4 border-2 border-red-600">
+                <AlertCircle className="h-5 w-5" />
+                <AlertDescription className="font-bold text-base">
+                  <strong>{!settings.isManuallyOpen ? '🔒 ESTABELECIMENTO FECHADO MANUALMENTE' : '⏰ FORA DO HORÁRIO DE FUNCIONAMENTO'}</strong> 
+                  <br />
+                  Não é possível fazer agendamentos no momento. Por favor, consulte nosso horário de funcionamento.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* 🔒 IF STORE IS CLOSED - RENDER DISABLED OVERLAY */}
+            {isStoreClosed && step !== 'confirmation' && (
+              <div className="mt-6 p-6 bg-red-50 border-2 border-red-300 rounded-lg">
+                <div className="flex items-center gap-4 text-red-700">
+                  <div className="text-4xl">🚫</div>
+                  <div>
+                    <p className="font-bold text-lg">Acesso bloqueado</p>
+                    <p className="text-sm">A loja não está funcionando agora. Volte mais tarde para agendar seu pedido.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Store Closed Alert - LEGACY */}
+            {shouldShowStoreClosedAlert && !isStoreClosed && (
               <Alert variant="destructive" className="mt-4">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
