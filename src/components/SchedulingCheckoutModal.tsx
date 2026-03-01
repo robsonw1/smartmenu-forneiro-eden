@@ -568,6 +568,12 @@ export function SchedulingCheckoutModal() {
   };
 
   const nextStep = () => {
+    // 🔒 BLOQUEIO: Se loja está fechada, NÃO permite avançar para próximos passos
+    if (!storeOpen || !settings.isManuallyOpen) {
+      toast.error(!settings.isManuallyOpen ? '🔒 Estabelecimento fechado manualmente. Não é possível fazer pedidos.' : '⏰ Estabelecimento fora do horário. Não é possível fazer pedidos.');
+      return;
+    }
+    
     const steps = getVisibleSteps(deliveryType);
     const currentIndex = steps.indexOf(step as any);
     if (!validateStep(step)) return;
@@ -994,16 +1000,26 @@ export function SchedulingCheckoutModal() {
   };
 
   const handleSubmitOrder = async () => {
-    // 🔒 VALIDAÇÃO CRÍTICA: Se loja está fechada manualmente, SEMPRE bloqueia
-    if (!settings.isManuallyOpen) {
-      toast.error('❌ Estabelecimento fechado manualmente. Não é possível fazer pedidos no momento.');
+    // 🔒 VALIDAÇÃO CRÍTICA #1: Verificar se loja está aberta - RECHECK antes de processar
+    const currentStoreOpen = isStoreOpen();
+    if (!settings.isManuallyOpen || !currentStoreOpen) {
+      const reason = !settings.isManuallyOpen 
+        ? '🔒 Estabelecimento fechado manualmente'
+        : '⏰ Estabelecimento fora do horário';
+      toast.error(`${reason}. Não é possível fazer pedidos no momento.`);
+      console.log('🚫 [BLOQUEIO] Agendamento bloqueado - Loja fechada');
       return;
     }
-
-    // 🔒 VALIDAÇÃO: Se loja está fora do horário de atendimento
-    if (!storeOpen && !settings.allowSchedulingOutsideBusinessHours) {
-      toast.error('Estabelecimento fechado. Agendamento fora do horário não permitido.');
-      return;
+    
+    // 🔒 VALIDAÇÃO CRÍTICA #2: Se agendamento fora do horário, verificar flags de permissão
+    if (!currentStoreOpen && !settings.allowSchedulingOutsideBusinessHours) {
+      // Se não está nos mesmos dias, nem permite mesmo que same-day esteja ativo
+      const isScheduledToday = scheduledDate === new Date().toISOString().split('T')[0];
+      if (!isScheduledToday || !settings.allowSameDaySchedulingOutsideHours) {
+        toast.error('⏰ Agendamento fora do horário não permitido. Verifique nosso horário de funcionamento.');
+        console.log('🚫 [BLOQUEIO] Agendamento bloqueado - Fora do horário');
+        return;
+      }
     }
     if (!validateStep('payment')) return;
     
@@ -2312,7 +2328,8 @@ export function SchedulingCheckoutModal() {
                   <Button 
                     className="btn-cta gap-2"
                     onClick={handleSubmitOrder}
-                    disabled={isProcessing}
+                    disabled={isProcessing || !storeOpen || !settings.isManuallyOpen}
+                    title={(!storeOpen || !settings.isManuallyOpen) ? '🔒 Loja fechada. Pedidos não permitidos.' : ''}
                   >
                     {isProcessing ? (
                       <>
@@ -2332,7 +2349,12 @@ export function SchedulingCheckoutModal() {
                     )}
                   </Button>
                 ) : (
-                  <Button className="btn-cta gap-2" onClick={nextStep}>
+                  <Button 
+                    className="btn-cta gap-2" 
+                    onClick={nextStep}
+                    disabled={!storeOpen || !settings.isManuallyOpen}
+                    title={(!storeOpen || !settings.isManuallyOpen) ? '🔒 Loja fechada. Pedidos não permitidos.' : ''}
+                  >
                     Continuar
                     <ArrowRight className="w-4 h-4" />
                   </Button>
