@@ -165,7 +165,7 @@ export const useSettingsStore = create<SettingsStore>()(
       settings: { ...state.settings, [key]: value },
     })),
 
-  updateDaySchedule: (day, schedule) =>
+  updateDaySchedule: (day, schedule) => {
     set((state) => ({
       settings: {
         ...state.settings,
@@ -174,7 +174,38 @@ export const useSettingsStore = create<SettingsStore>()(
           [day]: { ...state.settings.schedule[day], ...schedule },
         },
       },
-    })),
+    }));
+    
+    // ✅ SINCRONIZAR para Supabase
+    setTimeout(async () => {
+      try {
+        const { settings: currentSettings } = useSettingsStore.getState();
+        const settingsValue = {
+          name: currentSettings.name,
+          phone: currentSettings.phone,
+          address: currentSettings.address,
+          slogan: currentSettings.slogan,
+          schedule: currentSettings.schedule,
+          deliveryTimeMin: currentSettings.deliveryTimeMin,
+          deliveryTimeMax: currentSettings.deliveryTimeMax,
+          pickupTimeMin: currentSettings.pickupTimeMin,
+          pickupTimeMax: currentSettings.pickupTimeMax,
+          isManuallyOpen: currentSettings.isManuallyOpen,
+          orderAlertEnabled: currentSettings.orderAlertEnabled,
+          sendOrderSummaryToWhatsApp: currentSettings.sendOrderSummaryToWhatsApp,
+        };
+
+        await supabase
+          .from('settings')
+          .update({ value: settingsValue, updated_at: new Date().toISOString() })
+          .eq('id', 'store-settings');
+
+        console.log('✅ schedule sincronizado no Supabase para', day);
+      } catch (error) {
+        console.error('❌ Erro ao sincronizar schedule:', error);
+      }
+    }, 100);
+  },
 
   toggleManualOpen: () =>
     set((state) => ({
