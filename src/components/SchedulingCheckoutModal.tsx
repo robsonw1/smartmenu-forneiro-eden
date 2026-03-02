@@ -167,7 +167,7 @@ export function SchedulingCheckoutModal() {
   // ⚡ REALTIME: Sincronizar configurações do admin em tempo real (schedule, horários, etc)
   useSettingsRealtimeSync();
 
-  // ⏰ REATIVO ROBUSTO: Recalcular storeOpen quando settings mudam + intervalo de 30s
+  // ⏰ REATIVO ROBUSTO: Recalcular storeOpen quando settings mudam + intervalo de 5s
   useEffect(() => {
     // Função para recalcular status
     const recalculateStoreOpen = () => {
@@ -188,10 +188,10 @@ export function SchedulingCheckoutModal() {
       () => recalculateStoreOpen()
     );
 
-    // 3️⃣ Verificar a cada 30 segundos (independente de mudanças)
+    // 3️⃣ Verificar a cada 5 segundos (MUITO MAIS RÁPIDO - cliente pega mudanças quase imediatamente)
     const interval = setInterval(() => {
       recalculateStoreOpen();
-    }, 30000); // 30 segundos
+    }, 5000); // 5 segundos
 
     return () => {
       unsubscribe();
