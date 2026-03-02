@@ -37,8 +37,19 @@ export function useSettingsRealtimeSync() {
           const settingsData = data as any;
           const valueJson = settingsData.value || {};
           
+          // ✅ CRÍTICO: Se schedule vazio, usar defaults
+          const loadedSchedule = valueJson.schedule || {
+            monday: { isOpen: false, openTime: '18:00', closeTime: '23:00' },
+            tuesday: { isOpen: true, openTime: '18:00', closeTime: '23:00' },
+            wednesday: { isOpen: true, openTime: '18:00', closeTime: '23:00' },
+            thursday: { isOpen: true, openTime: '18:00', closeTime: '23:00' },
+            friday: { isOpen: true, openTime: '18:00', closeTime: '23:00' },
+            saturday: { isOpen: true, openTime: '17:00', closeTime: '00:00' },
+            sunday: { isOpen: true, openTime: '17:00', closeTime: '23:00' },
+          };
+          
           console.log('👀 [SETTINGS-SYNC] isManuallyOpen:', valueJson.isManuallyOpen);
-          console.log('⏰ [SETTINGS-SYNC] schedule:', valueJson.schedule);
+          console.log('⏰ [SETTINGS-SYNC] schedule:', loadedSchedule);
 
           // Mapear TODOS os campos para o store
           await updateSettings({
@@ -46,7 +57,7 @@ export function useSettingsRealtimeSync() {
             phone: valueJson.phone || '(11) 99999-9999',
             address: valueJson.address || 'Rua das Pizzas, 123 - Centro',
             slogan: valueJson.slogan || 'A Pizza mais recheada da cidade 🇮🇹',
-            schedule: valueJson.schedule || {},
+            schedule: loadedSchedule, // ✅ USE LOADED SCHEDULE WITH DEFAULTS
             isManuallyOpen: valueJson.isManuallyOpen ?? true,
             deliveryTimeMin: valueJson.deliveryTimeMin ?? 60,
             deliveryTimeMax: valueJson.deliveryTimeMax ?? 70,
@@ -91,10 +102,21 @@ export function useSettingsRealtimeSync() {
           const newData = payload.new as any;
           const newValueJson = newData.value || {};
           
+          // ✅ CRÍTICO: Se schedule vazio, usar defaults
+          const newLoadedSchedule = newValueJson.schedule || {
+            monday: { isOpen: false, openTime: '18:00', closeTime: '23:00' },
+            tuesday: { isOpen: true, openTime: '18:00', closeTime: '23:00' },
+            wednesday: { isOpen: true, openTime: '18:00', closeTime: '23:00' },
+            thursday: { isOpen: true, openTime: '18:00', closeTime: '23:00' },
+            friday: { isOpen: true, openTime: '18:00', closeTime: '23:00' },
+            saturday: { isOpen: true, openTime: '17:00', closeTime: '00:00' },
+            sunday: { isOpen: true, openTime: '17:00', closeTime: '23:00' },
+          };
+          
           console.log('🔴 [SETTINGS-SYNC] NOVO isManuallyOpen:', newValueJson.isManuallyOpen);
           console.log('📊 [SETTINGS-SYNC] Novos dados completos:', {
             isManuallyOpen: newValueJson.isManuallyOpen,
-            schedule: newValueJson.schedule,
+            schedule: newLoadedSchedule,
             enable_scheduling: newData.enable_scheduling,
           });
 
@@ -104,7 +126,7 @@ export function useSettingsRealtimeSync() {
             phone: newValueJson.phone || '(11) 99999-9999',
             address: newValueJson.address || 'Rua das Pizzas, 123 - Centro',
             slogan: newValueJson.slogan || 'A Pizza mais recheada da cidade 🇮🇹',
-            schedule: newValueJson.schedule || {},
+            schedule: newLoadedSchedule, // ✅ USE NEW LOADED SCHEDULE WITH DEFAULTS
             isManuallyOpen: newValueJson.isManuallyOpen ?? true,
             deliveryTimeMin: newValueJson.deliveryTimeMin ?? 60,
             deliveryTimeMax: newValueJson.deliveryTimeMax ?? 70,
