@@ -33,9 +33,20 @@ export function useSettingsInitialLoad() {
           const settingsData = data as any;
           const valueJson = settingsData.value || {};
           
+          // ✅✅✅ CRÍTICO: Se schedule não tiver, carregar com defaults
+          const loadedSchedule = valueJson.schedule || {
+            monday: { isOpen: false, openTime: '18:00', closeTime: '23:00' },
+            tuesday: { isOpen: true, openTime: '18:00', closeTime: '23:00' },
+            wednesday: { isOpen: true, openTime: '18:00', closeTime: '23:00' },
+            thursday: { isOpen: true, openTime: '18:00', closeTime: '23:00' },
+            friday: { isOpen: true, openTime: '18:00', closeTime: '23:00' },
+            saturday: { isOpen: true, openTime: '17:00', closeTime: '00:00' },
+            sunday: { isOpen: true, openTime: '17:00', closeTime: '23:00' },
+          };
+          
           console.log('✅✅✅ Settings carregadas COMPLETAS:', {
             isManuallyOpen: valueJson.isManuallyOpen,
-            schedule: valueJson.schedule,
+            schedule: loadedSchedule,
             enable_scheduling: settingsData.enable_scheduling,
           });
 
@@ -46,7 +57,7 @@ export function useSettingsInitialLoad() {
             phone: valueJson.phone || '(11) 99999-9999',
             address: valueJson.address || 'Rua das Pizzas, 123 - Centro',
             slogan: valueJson.slogan || 'A Pizza mais recheada da cidade 🇮🇹',
-            schedule: valueJson.schedule || {},
+            schedule: loadedSchedule, // ✅ USE LOADED SCHEDULE
             isManuallyOpen: valueJson.isManuallyOpen ?? true,
             deliveryTimeMin: valueJson.deliveryTimeMin ?? 60,
             deliveryTimeMax: valueJson.deliveryTimeMax ?? 70,
@@ -64,7 +75,7 @@ export function useSettingsInitialLoad() {
             allowSameDaySchedulingOutsideHours: settingsData.allow_same_day_scheduling_outside_hours ?? false,
           });
 
-          console.log('✅✅✅ Store atualizado com SUCESSO - isManuallyOpen:', valueJson.isManuallyOpen);
+          console.log('✅✅✅ Store atualizado com SUCESSO - schedule:', loadedSchedule);
 
         }
       } catch (error) {
