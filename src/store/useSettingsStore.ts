@@ -229,31 +229,37 @@ export const useSettingsStore = create<SettingsStore>()(
   isStoreOpen: () => {
     const { settings } = get();
     
-    // If manually closed, store is closed
-    if (!settings.isManuallyOpen) {
-      console.log('❌ LOJA FECHADA - isManuallyOpen é FALSE');
+    // ❌ Se manual close button foi clicado: SEMPRE fechado (sem exceções)
+    if (settings.isManuallyOpen === false) {
+      console.log('❌ LOJA FECHADA - Botão manual FECHADO pelo gerente');
       return false;
     }
 
-    // ✅ If manually opened AND allowSchedulingOutsideBusinessHours is TRUE → ALWAYS OPEN
-    if (settings.isManuallyOpen === true && settings.allowSchedulingOutsideBusinessHours === true) {
-      console.log('✅ LOJA ABERTA MANUALMENTE + AGENDAMENTO FORA DO HORÁRIO PERMITIDO - Ignora horário');
-      return true;
-    }
-
-    // ✅ If manually opened BUT allowSchedulingOutsideBusinessHours is FALSE → CHECK SCHEDULE
-    // This means: respect the configured schedule even when manually opened
+    // ✅ Se manual open button foi clicado: AINDA RESPEITA OS HORÁRIOS CONFIGURADOS
+    // O gerente pode abrir manualmente, mas os horários do menu (Seg-Dom) SEMPRE são respeitados
+    // Isso garante que nenhum pedido seja feito fora do horário configurado
+    
     const now = new Date();
     const currentDay = dayNames[now.getDay()];
     const daySchedule = settings.schedule[currentDay];
 
-    // Se não tem schedule ou não tá aberto, retorna false
-    if (!daySchedule || !daySchedule.isOpen || !daySchedule.openTime || !daySchedule.closeTime) {
-      console.log('❌ LOJA FECHADA - schedule não configurado para hoje');
+    // Se não tem schedule configurado para hoje ou tá marcado como fechado
+    if (!daySchedule) {
+      console.log('❌ LOJA FECHADA - Dia não encontrado no schedule');
       return false;
     }
 
-    // Check current time against schedule
+    if (!daySchedule.isOpen) {
+      console.log('❌ LOJA FECHADA - Dia marcado como FECHADO no schedule');
+      return false;
+    }
+
+    if (!daySchedule.openTime || !daySchedule.closeTime) {
+      console.log('❌ LOJA FECHADA - Horários não configurados para hoje');
+      return false;
+    }
+
+    // ⏰ Calcular hora atual em minutos
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
     const currentTime = currentHour * 60 + currentMinute;
@@ -270,12 +276,12 @@ export const useSettingsStore = create<SettingsStore>()(
         closeTime += 24 * 60; // Add 24 hours
         const adjustedCurrentTime = currentTime < openTime ? currentTime + 24 * 60 : currentTime;
         const isOpen = adjustedCurrentTime >= openTime && adjustedCurrentTime < closeTime;
-        console.log(isOpen ? '✅ LOJA ABERTA - dentro do horário' : '❌ LOJA FECHADA - fora do horário');
+        console.log(isOpen ? '✅ LOJA ABERTA - dentro do horário' : `❌ LOJA FECHADA - Fora do horário (${daySchedule.openTime}-${daySchedule.closeTime})`);
         return isOpen;
       }
 
       const isOpen = currentTime >= openTime && currentTime < closeTime;
-      console.log(isOpen ? '✅ LOJA ABERTA - dentro do horário' : '❌ LOJA FECHADA - fora do horário');
+      console.log(isOpen ? '✅ LOJA ABERTA - dentro do horário' : `❌ LOJA FECHADA - Fora do horário (${daySchedule.openTime}-${daySchedule.closeTime})`);
       return isOpen;
     } catch (error) {
       console.error('Erro ao calcular horário de funcionamento:', error);
